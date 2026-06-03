@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createOpenComposerTuiDryRun, createTuiBackendCommand } from "@/opencomposer/tui"
+import { createOpenComposerTuiDryRun, createTuiBackendCommand, selectOpenComposerTuiRunner } from "@/opencomposer/tui"
 import { renderOpenComposerFrame } from "@/opencomposer/tui-render"
 
 describe("opencomposer tui", () => {
@@ -75,5 +75,13 @@ describe("opencomposer tui", () => {
     expect(frame).toContain("Composer 2.5")
     expect(frame).toContain("/workspace/app")
     expect(frame).not.toContain("Cursor Agent")
+  })
+
+  test("Given an interactive terminal When selecting a runner Then OpenTUI is the default surface", () => {
+    expect(selectOpenComposerTuiRunner({ stdinTty: true, stdoutTty: true })).toBe("opentui")
+  })
+
+  test("Given a non-interactive prompt When selecting a runner Then it uses direct backend output", () => {
+    expect(selectOpenComposerTuiRunner({ prompt: "fix tests", stdinTty: false, stdoutTty: true })).toBe("headless")
   })
 })

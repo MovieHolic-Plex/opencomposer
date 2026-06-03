@@ -17,12 +17,15 @@ model/runtime backend로 두고 OpenCode의 terminal product surface를 그 위�
 - Runtime backend: `cursor-agent`
 - 첫 bridge 위치: `packages/opencode/src/opencomposer`
 
-`opencomposer` 명령은 기본적으로 OpenCode-style session surface를 엽니다. 화면은
-transcript, composer input, status footer, 넓은 터미널의 workflow/sidebar rail로
-구성됩니다. Cursor Agent는 화면으로 직접 노출되지 않고 Composer 2.5 backend로만
+`opencomposer` 명령은 기본적으로 OpenTUI 기반 session surface를 엽니다. 화면은
+transcript scrollbox, composer input, status footer, 넓은 터미널의 workflow/sidebar
+rail로 구성됩니다. Cursor Agent는 화면으로 직접 노출되지 않고 Composer 2.5 backend로만
 호출됩니다. headless 또는 ACP mode를 명시한 경우에만 Cursor Agent 명령을 직접
-실행합니다. upstream OpenCode TUI shell은 아직 Composer backend에 연결되지 않았으므로
-`--opencode-tui` 실험 옵션으로 분리했습니다.
+실행합니다.
+
+upstream OpenCode TUI shell은 fork 안에 유지하고 `--opencode-tui` 실험 옵션으로
+분리했습니다. 기본 `opencomposer` 화면은 OpenTUI component를 직접 사용해서 Cursor
+headless backend와 붙습니다.
 
 ## 사용법
 
@@ -34,6 +37,9 @@ opencomposer "fix tests"
 opencomposer --yolo "fix tests"
 opencomposer --opencode-tui
 ```
+
+`opencomposer`는 실제 terminal에서 실행해야 interactive OpenTUI 화면이 뜹니다. 비대화형
+shell에서 prompt를 같이 넘기면 direct headless Composer backend 경로를 사용합니다.
 
 설치 없이 저장소에서 직접 확인:
 

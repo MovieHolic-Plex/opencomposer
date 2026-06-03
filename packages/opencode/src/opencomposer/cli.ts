@@ -21,6 +21,7 @@ class UsageError extends Error {
 }
 
 export async function main(argv: readonly string[]) {
+  applyWorkspaceCwd()
   const options = parseArgs(argv)
   if (options.mode === "tui") {
     if (options.dryRun) {
@@ -71,6 +72,11 @@ export async function main(argv: readonly string[]) {
     stderr: "inherit",
   })
   return await proc.exited
+}
+
+function applyWorkspaceCwd() {
+  const cwd = process.env.OPENCOMPOSER_WORKSPACE_CWD
+  if (cwd) process.chdir(cwd)
 }
 
 function parseArgs(argv: readonly string[]): CliOptions {

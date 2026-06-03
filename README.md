@@ -16,13 +16,16 @@ This repository is at the fork-foundation stage.
 - Runtime backend: `cursor-agent`
 - First bridge: `packages/opencode/src/opencomposer`
 
-The `opencomposer` command opens an OpenCode-style session surface by default:
-transcript, composer input, status footer, and a workflow/sidebar rail on wide
-terminals. Cursor Agent is not exposed as the visible interface; it is invoked
-as the Composer 2.5 backend. Headless and ACP modes still run Cursor Agent
-directly when requested.
-The upstream OpenCode TUI shell is not wired to the Composer backend yet, so it
-is exposed separately through the experimental `--opencode-tui` option.
+The `opencomposer` command opens an OpenTUI-powered session surface by default:
+transcript scrollbox, composer input, status footer, and a workflow/sidebar rail
+on wide terminals. Cursor Agent is not exposed as the visible interface; it is
+invoked as the Composer 2.5 backend. Headless and ACP modes still run Cursor
+Agent directly when requested.
+
+The upstream OpenCode TUI shell is kept in the fork and exposed separately
+through the experimental `--opencode-tui` option. The default `opencomposer`
+surface uses OpenTUI components directly so the Composer bridge can stay focused
+on Cursor's headless backend.
 
 ## Usage
 
@@ -34,6 +37,10 @@ opencomposer "fix tests"
 opencomposer --yolo "fix tests"
 opencomposer --opencode-tui
 ```
+
+`opencomposer` must be launched in a real terminal to show the interactive
+OpenTUI surface. Passing a prompt in a non-interactive shell uses the direct
+headless Composer backend path.
 
 Without installing, from this repository:
 
