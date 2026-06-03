@@ -5,6 +5,8 @@ import path from "node:path"
 import {
   createInitialWorkflow,
   runWorkflowTurn,
+  workflowCompletionEntry,
+  workflowStatusSummary,
   writeWorkflowState,
   type WorkflowBackend,
 } from "@/opencomposer/workflow"
@@ -20,6 +22,41 @@ describe("opencomposer workflow", () => {
       "team:skipped",
       "execute:pending",
     ])
+  })
+
+  test("Given a user explicitly skips deep interview When creating workflow state Then only that stage is skipped", () => {
+    const workflow = createInitialWorkflow({ prompt: "skip the deep interview and fix tests" })
+
+    expect(workflow.stages.map((stage) => `${stage.id}:${stage.status}`)).toEqual([
+      "deep-interview:skipped",
+      "ralplan:pending",
+      "ultragoal:pending",
+      "team:skipped",
+      "execute:pending",
+    ])
+  })
+
+  test("Given a negated skip phrase When creating workflow state Then deep interview still runs", () => {
+    const workflow = createInitialWorkflow({ prompt: "I do not want to skip deep interview; fix tests" })
+
+    expect(workflow.stages[0]).toEqual({ id: "deep-interview", status: "pending" })
+  })
+
+  test("Given a completed workflow When summarizing Then a short markdown completion entry is created", async () => {
+    const backend: WorkflowBackend = async (input) => ({ output: `artifact from ${input.stage}`, status: 0 })
+
+    const result = await runWorkflowTurn({
+      backend,
+      prompt: "fix tests",
+      turn: "first",
+    })
+    const entry = workflowCompletionEntry(result.workflow)
+
+    expect(workflowStatusSummary(result.workflow)).toBe("workflow complete")
+    expect(entry?.kind).toBe("agent")
+    expect(entry?.text).toContain("## Workflow summary")
+    expect(entry?.text).toContain("**Deep interview**")
+    expect(entry?.text).toContain("**Execute**")
   })
 
   test("Given a workflow backend When running a turn Then it gates execution through every stage", async () => {

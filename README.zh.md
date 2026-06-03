@@ -13,8 +13,8 @@ Translations: [English](README.md), [한국어](README.ko.md),
 
 - 默认模型：`composer-2.5`
 - 默认命令：`opencomposer`
-- 默认 UI：OpenTUI session surface，包含 transcript、composer input、status，以及宽屏
-  terminal 下的 workflow/sidebar rail
+- 默认 UI：OpenTUI session surface，包含 transcript、composer input、status，以及顶部
+  header 中的 compact workflow progress
 - backend：`cursor-agent --model composer-2.5 --print --trust --force`
 - workflow：interactive turn 会按 `deep-interview -> ralplan -> ultragoal -> execute`
   顺序运行。设置 `OPENCOMPOSER_ENABLE_TEAM=1` 后，会在 execution 前加入 optional

@@ -2,9 +2,10 @@
 import "opentui-spinner/solid"
 import { For, Show } from "solid-js"
 import { MarkdownText } from "./opentui-markdown"
+import { workflowStatusSummary } from "./workflow"
 import type { OpenTuiState } from "./opentui"
 import type { TuiEntry } from "./tui-render"
-import type { WorkflowStage, WorkflowStageStatus } from "./workflow"
+import type { WorkflowState } from "./workflow"
 
 export const color = {
   accent: "#fab283",
@@ -19,9 +20,12 @@ export const color = {
   warning: "#f5a742",
 } as const
 
-export const SIDEBAR_WIDTH = 30
-
-export function Header(props: { readonly model: string; readonly status: string; readonly yolo: boolean }) {
+export function Header(props: {
+  readonly model: string
+  readonly status: string
+  readonly workflow?: WorkflowState
+  readonly yolo: boolean
+}) {
   return (
     <box
       flexDirection="row"
@@ -35,7 +39,7 @@ export function Header(props: { readonly model: string; readonly status: string;
         <span style={{ fg: color.accent }}>●</span> <b>Open</b>Composer
       </text>
       <text fg={color.muted}>
-        {props.model} · {props.yolo ? "YOLO" : "guarded"} · {props.status}
+        {props.model} · {props.yolo ? "YOLO" : "guarded"} · {props.status} · {workflowStatusSummary(props.workflow)}
       </text>
     </box>
   )
@@ -95,65 +99,6 @@ export function Composer(props: { readonly input: string; readonly phase: OpenTu
   )
 }
 
-export function Sidebar(props: { readonly model: string; readonly state: OpenTuiState; readonly yolo: boolean }) {
-  const stages = () => props.state.workflow?.stages ?? fallbackWorkflowStages
-
-  return (
-    <box
-      width={SIDEBAR_WIDTH}
-      height="100%"
-      flexDirection="column"
-      backgroundColor={color.panel}
-      paddingTop={1}
-      paddingLeft={1}
-      paddingRight={1}
-    >
-      <Row>
-        <text fg={color.text}>
-          <b>Workflow</b>
-        </text>
-      </Row>
-      <For each={stages()}>{(stage) => <WorkflowItem label={workflowLabel(stage)} status={stage.status} />}</For>
-      <box height={1} />
-      <Row>
-        <text fg={color.text}>
-          <b>Backend</b>
-        </text>
-      </Row>
-      <Row>
-        <text fg={color.muted}>model {props.model}</text>
-      </Row>
-      <Row>
-        <text fg={color.muted}>mode {props.yolo ? "yolo" : "guarded"}</text>
-      </Row>
-      <Row>
-        <text fg={color.muted}>state {props.state.hasSession ? "continued" : "new session"}</text>
-      </Row>
-      <Row>
-        <text fg={color.muted}>tokens n/a</text>
-      </Row>
-    </box>
-  )
-}
-
-const fallbackWorkflowStages: readonly WorkflowStage[] = [
-  { id: "deep-interview", status: "pending" },
-  { id: "ralplan", status: "pending" },
-  { id: "ultragoal", status: "pending" },
-  { id: "team", status: "skipped" },
-  { id: "execute", status: "pending" },
-]
-
-function WorkflowItem(props: { readonly label: string; readonly status: WorkflowStageStatus }) {
-  return (
-    <Row>
-      <text fg={workflowColor(props.status)}>
-        {workflowMarker(props.status)} {props.label}
-      </text>
-    </Row>
-  )
-}
-
 function Row(props: { readonly children: unknown }) {
   return (
     <box height={1} flexShrink={0}>
@@ -182,24 +127,5 @@ function entryColor(kind: TuiEntry["kind"]) {
   if (kind === "error") return color.error
   if (kind === "user") return color.accent
   if (kind === "agent") return color.success
-  return color.muted
-}
-
-function workflowLabel(stage: WorkflowStage) {
-  if (stage.id === "team") return "team optional"
-  return stage.id
-}
-
-function workflowMarker(status: WorkflowStageStatus) {
-  if (status === "done") return "✓"
-  if (status === "failed") return "!"
-  if (status === "running") return "●"
-  if (status === "skipped") return "-"
-  return "○"
-}
-
-function workflowColor(status: WorkflowStageStatus) {
-  if (status === "failed") return color.error
-  if (status === "running") return color.success
   return color.muted
 }

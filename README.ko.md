@@ -14,7 +14,7 @@ interface를 붙입니다.
 
 - 기본 모델: `composer-2.5`
 - 기본 명령: `opencomposer`
-- 기본 UI: transcript, composer input, status, 넓은 터미널용 workflow/sidebar rail을
+- 기본 UI: transcript, composer input, status, 상단 header의 compact workflow progress를
   갖춘 OpenTUI session surface
 - Backend: `cursor-agent --model composer-2.5 --print --trust --force`
 - Workflow: interactive turn은 `deep-interview -> ralplan -> ultragoal -> execute`를

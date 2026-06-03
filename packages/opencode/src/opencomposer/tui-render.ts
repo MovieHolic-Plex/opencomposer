@@ -1,3 +1,5 @@
+import { workflowStatusSummary, type WorkflowState } from "./workflow"
+
 export type TuiEntry = {
   readonly id?: string
   readonly kind: "agent" | "error" | "system" | "user"
@@ -13,32 +15,32 @@ export type TuiRenderInput = {
   readonly phase: "editing" | "running"
   readonly status: string
   readonly width: number
+  readonly workflow?: WorkflowState
   readonly yolo: boolean
 }
 
 const MIN_WIDTH = 72
-const SIDEBAR_WIDTH = 36
 
 export function renderOpenComposerFrame(input: TuiRenderInput) {
   const width = Math.max(input.width, MIN_WIDTH)
-  const showSidebar = width >= 100
-  const mainWidth = showSidebar ? width - SIDEBAR_WIDTH - 3 : width
   const transcript = [
-    headerLine(input, mainWidth),
-    rule(mainWidth),
-    ...sessionLines(input, mainWidth),
-    blank(mainWidth),
-    ...transcriptLines(input.entries, mainWidth),
-    blank(mainWidth),
-    composerLine(input, mainWidth),
-    footerLine(input, mainWidth),
+    headerLine(input, width),
+    rule(width),
+    ...sessionLines(input, width),
+    blank(width),
+    ...transcriptLines(input.entries, width),
+    blank(width),
+    composerLine(input, width),
+    footerLine(input, width),
   ]
-  if (!showSidebar) return transcript.join("\n")
-  return zipColumns(transcript, sidebarLines(input, SIDEBAR_WIDTH), mainWidth, " | ")
+  return transcript.join("\n")
 }
 
 function headerLine(input: TuiRenderInput, width: number) {
-  return fit(`OpenComposer  ${formatModel(input.model)}  ${input.yolo ? "YOLO" : "guarded"}  ${input.status}`, width)
+  return fit(
+    `OpenComposer  ${formatModel(input.model)}  ${input.yolo ? "YOLO" : "guarded"}  ${input.status}  ${workflowStatusSummary(input.workflow)}`,
+    width,
+  )
 }
 
 function sessionLines(input: TuiRenderInput, width: number) {
@@ -68,28 +70,6 @@ function footerLine(input: TuiRenderInput, width: number) {
   return fit(`${input.cwd}    /status`, width)
 }
 
-function sidebarLines(input: TuiRenderInput, width: number) {
-  return [
-    fit("OpenComposer", width),
-    fit("Composer 2.5 for Cursor", width),
-    rule(width),
-    fit("Workflow", width),
-    workflowItem("deep-interview", input.phase !== "editing", width),
-    workflowItem("ralplan", input.phase !== "editing", width),
-    workflowItem("ultragoal", input.phase !== "editing", width),
-    workflowItem("team optional", false, width),
-    blank(width),
-    fit("Backend", width),
-    fit(`  model  ${input.model}`, width),
-    fit(`  mode   ${input.yolo ? "yolo" : "guarded"}`, width),
-    fit(`  state  ${input.hasSession ? "continued" : "new session"}`, width),
-  ]
-}
-
-function workflowItem(label: string, active: boolean, width: number) {
-  return fit(`  ${active ? "[>]" : "[ ]"} ${label}`, width)
-}
-
 function marker(kind: TuiEntry["kind"]) {
   if (kind === "agent") return "|"
   if (kind === "error") return "!"
@@ -108,12 +88,6 @@ function rule(width: number) {
 
 function blank(width: number) {
   return " ".repeat(width)
-}
-
-function zipColumns(left: readonly string[], right: readonly string[], leftWidth: number, gap: string) {
-  return Array.from({ length: Math.max(left.length, right.length) }, (_, index) =>
-    `${left[index] ?? blank(leftWidth)}${gap}${right[index] ?? ""}`.trimEnd(),
-  ).join("\n")
 }
 
 function wrap(text: string, width: number) {

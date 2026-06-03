@@ -15,7 +15,7 @@ Maintained translations: [한국어](README.ko.md), [日本語](README.ja.md),
 - Default model: `composer-2.5`
 - Default command: `opencomposer`
 - Default UI: OpenTUI session surface with transcript, composer input, status,
-  and a workflow/sidebar rail on wide terminals
+  and compact workflow progress in the top header
 - Backend: `cursor-agent --model composer-2.5 --print --trust --force`
 - Workflow: interactive turns run `deep-interview -> ralplan -> ultragoal ->
 execute`; set `OPENCOMPOSER_ENABLE_TEAM=1` to include the optional `team`

@@ -89,10 +89,38 @@ describe("opencomposer tui", () => {
 
     expect(frame).toContain("OpenComposer")
     expect(frame).toContain("Session")
-    expect(frame).toContain("Workflow")
+    expect(frame).toContain("workflow ready")
     expect(frame).toContain("Composer 2.5")
     expect(frame).toContain("/workspace/app")
+    expect(frame).not.toContain("Backend")
     expect(frame).not.toContain("Cursor Agent")
+  })
+
+  test("Given a running workflow When rendering Then the header names the active stage", () => {
+    const frame = renderOpenComposerFrame({
+      cwd: "/workspace/app",
+      entries: [],
+      hasSession: false,
+      input: "",
+      model: "composer-2.5",
+      phase: "running",
+      status: "RUNNING",
+      width: 120,
+      workflow: {
+        prompt: "fix tests",
+        stages: [
+          { id: "deep-interview", status: "done" },
+          { id: "ralplan", status: "running" },
+          { id: "ultragoal", status: "pending" },
+          { id: "team", status: "skipped" },
+          { id: "execute", status: "pending" },
+        ],
+      },
+      yolo: true,
+    })
+
+    expect(frame).toContain("YOLO")
+    expect(frame).toContain("workflow ralplan running")
   })
 
   test("Given an interactive terminal When selecting a runner Then OpenTUI is the default surface", () => {

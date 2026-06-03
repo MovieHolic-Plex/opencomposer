@@ -41,11 +41,13 @@ export function createInitialWorkflow(input: {
   readonly prompt: string
   readonly teamEnabled?: boolean
 }): WorkflowState {
+  const skipDeepInterview = shouldSkipDeepInterview(input.prompt)
   return {
     prompt: input.prompt,
     stages: WORKFLOW_STAGE_IDS.map((id) => ({
       id,
-      status: id === "team" && !input.teamEnabled ? "skipped" : "pending",
+      status:
+        (id === "deep-interview" && skipDeepInterview) || (id === "team" && !input.teamEnabled) ? "skipped" : "pending",
     })),
   }
 }
@@ -175,6 +177,30 @@ function workflowEntries(stage: WorkflowStage): readonly WorkflowEntry[] {
   return [{ kind: stage.status === "failed" ? "error" : "agent", text: `workflow ${stage.id}: ${stage.artifact}` }]
 }
 
+export function workflowStatusSummary(workflow: WorkflowState | undefined) {
+  if (!workflow) return "workflow ready"
+  const failed = workflow.stages.find((stage) => stage.status === "failed")
+  if (failed) return `workflow ${failed.id} failed`
+  const running = workflow.stages.find((stage) => stage.status === "running")
+  if (running) return `workflow ${running.id} running`
+  const activeStages = workflow.stages.filter((stage) => stage.status !== "skipped")
+  const doneCount = activeStages.filter((stage) => stage.status === "done").length
+  if (doneCount === activeStages.length) return "workflow complete"
+  const next = activeStages.find((stage) => stage.status === "pending")
+  return `workflow ${doneCount}/${activeStages.length}${next ? ` next ${next.id}` : ""}`
+}
+
+export function workflowCompletionEntry(workflow: WorkflowState): WorkflowEntry | undefined {
+  const activeStages = workflow.stages.filter((stage) => stage.status !== "skipped")
+  if (activeStages.length === 0 || activeStages.some((stage) => stage.status !== "done")) return undefined
+  const lines = activeStages.map((stage) => `- **${stageLabel(stage.id)}**: ${stageCompletion(stage.id)}`)
+  return {
+    id: "workflow-completion-summary",
+    kind: "agent",
+    text: ["## Workflow summary", ...lines].join("\n"),
+  }
+}
+
 function artifactContext(stages: readonly WorkflowStage[]) {
   const artifacts = stages
     .filter((stage) => stage.artifact && stage.status === "done")
@@ -182,4 +208,59 @@ function artifactContext(stages: readonly WorkflowStage[]) {
     .join("\n\n")
   if (artifacts.length === 0) return "No prior workflow artifact."
   return artifacts
+}
+
+function shouldSkipDeepInterview(prompt: string) {
+  const normalized = prompt.toLowerCase().replace(/[-_]/g, " ")
+  if (
+    [
+      "do not skip deep interview",
+      "don't skip deep interview",
+      "dont skip deep interview",
+      "do not skip the deep interview",
+      "don't skip the deep interview",
+      "dont skip the deep interview",
+      "do not want to skip deep interview",
+      "don't want to skip deep interview",
+      "dont want to skip deep interview",
+      "do not want to skip the deep interview",
+      "don't want to skip the deep interview",
+      "dont want to skip the deep interview",
+      "not skip deep interview",
+      "not skip the deep interview",
+      "딥인터뷰 생략하지마",
+      "딥 인터뷰 생략하지마",
+      "인터뷰 생략하지마",
+    ].some((phrase) => normalized.includes(phrase))
+  ) {
+    return false
+  }
+  return [
+    "skip deep interview",
+    "skip the deep interview",
+    "skip deepinterview",
+    "no deep interview",
+    "without deep interview",
+    "deep interview skip",
+    "딥인터뷰 생략",
+    "딥 인터뷰 생략",
+    "인터뷰 생략",
+    "인터뷰 하지마",
+  ].some((phrase) => normalized.includes(phrase))
+}
+
+function stageLabel(stage: WorkflowStageId) {
+  if (stage === "deep-interview") return "Deep interview"
+  if (stage === "ralplan") return "Plan"
+  if (stage === "ultragoal") return "Goal checks"
+  if (stage === "team") return "Team"
+  return "Execute"
+}
+
+function stageCompletion(stage: WorkflowStageId) {
+  if (stage === "deep-interview") return "clarified the request and assumptions"
+  if (stage === "ralplan") return "prepared the implementation path"
+  if (stage === "ultragoal") return "set completion checks"
+  if (stage === "team") return "ran optional parallel work"
+  return "applied the requested work"
 }

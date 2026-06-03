@@ -12,8 +12,8 @@ Translations: [English](README.md), [한국어](README.ko.md),
 
 - 預設模型：`composer-2.5`
 - 預設命令：`opencomposer`
-- 預設 UI：OpenTUI session surface，包含 transcript、composer input、status，以及寬螢幕
-  terminal 下的 workflow/sidebar rail
+- 預設 UI：OpenTUI session surface，包含 transcript、composer input、status，以及頂部
+  header 中的 compact workflow progress
 - backend：`cursor-agent --model composer-2.5 --print --trust --force`
 - workflow：interactive turn 會按 `deep-interview -> ralplan -> ultragoal -> execute`
   順序執行。設定 `OPENCOMPOSER_ENABLE_TEAM=1` 後，會在 execution 前加入 optional

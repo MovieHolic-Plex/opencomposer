@@ -77,6 +77,22 @@ describe("opencomposer cursor stream", () => {
     expect(lines[1]?.spans.map((span) => span.text).join("")).toBe("• item with bold")
     expect(lines[2]?.spans.map((span) => span.text).join("")).toBe("  const ok = true")
   })
+
+  test("Given a markdown table When parsing it Then it renders as aligned text without separator markup", () => {
+    const lines = parseMarkdownLines(["| File | Status |", "| --- | --- |", "| README.md | Done |"].join("\n"))
+
+    expect(lines.map((line) => line.kind)).toEqual(["tableHeader", "tableRule", "table"])
+    expect(lines[0]?.spans.map((span) => span.text).join("")).toBe("File       Status")
+    expect(lines[1]?.spans.map((span) => span.text).join("")).toBe("---------  ------")
+    expect(lines[2]?.spans.map((span) => span.text).join("")).toBe("README.md  Done  ")
+  })
+
+  test("Given a markdown table with code-span pipes When parsing it Then the cell is preserved", () => {
+    const lines = parseMarkdownLines(["| Expr | Status |", "| --- | --- |", "| `a | b` | Done |"].join("\n"))
+
+    expect(lines.map((line) => line.kind)).toEqual(["tableHeader", "tableRule", "table"])
+    expect(lines[2]?.spans.map((span) => span.text).join("")).toBe("a | b  Done  ")
+  })
 })
 
 function streamFromLines(lines: readonly Record<string, unknown>[]) {

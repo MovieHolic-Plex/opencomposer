@@ -1,12 +1,12 @@
 /** @jsxImportSource @opentui/solid */
 import { createCliRenderer } from "@opentui/core"
-import { render, useKeyboard, useTerminalDimensions } from "@opentui/solid"
-import { createMemo, createSignal, onMount, Show } from "solid-js"
+import { render, useKeyboard } from "@opentui/solid"
+import { createSignal, onMount } from "solid-js"
 import { DEFAULT_COMPOSER_MODEL } from "./cursor-agent"
 import { isBackspaceKey, isSubmitKey, printableKey } from "./keyboard"
-import { color, Composer, Footer, Header, SIDEBAR_WIDTH, SessionPanel, Sidebar, Transcript } from "./opentui-view"
+import { color, Composer, Footer, Header, SessionPanel, Transcript } from "./opentui-view"
 import type { TuiEntry } from "./tui-render"
-import type { WorkflowState } from "./workflow"
+import { workflowCompletionEntry, type WorkflowState } from "./workflow"
 
 export type OpenTuiState = {
   readonly cwd: string
@@ -52,12 +52,9 @@ export async function runOpenComposerOpenTui(options: OpenTuiOptions) {
 }
 
 function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: number) => void }) {
-  const dimensions = useTerminalDimensions()
   const model = props.model?.trim() || DEFAULT_COMPOSER_MODEL
   const [state, setState] = createSignal(props.initial)
   const [exitStatus, setExitStatus] = createSignal(0)
-  const wide = createMemo(() => dimensions().width >= 96)
-  const contentWidth = createMemo(() => (wide() ? dimensions().width - SIDEBAR_WIDTH : dimensions().width))
 
   const submit = (value = state().input) => {
     const prompt = value.trim()
@@ -85,7 +82,12 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
         setExitStatus(result.status)
         setState((next) => ({
           ...next,
-          entries: [...next.entries, ...result.entries, backendEntry(result.status)],
+          entries: [
+            ...next.entries,
+            ...result.entries,
+            ...completionEntries(result.status, result.workflow),
+            backendEntry(result.status),
+          ],
           hasSession: result.status === 0 || next.hasSession,
           phase: "editing",
           status: result.status === 0 ? "READY" : "FAILED",
@@ -134,17 +136,20 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
   })
 
   return (
-    <box width="100%" height="100%" flexDirection="row" backgroundColor={color.background}>
-      <box width={contentWidth()} height="100%" flexDirection="column" paddingLeft={2} paddingRight={2} paddingTop={1}>
-        <Header model={model} status={state().status} yolo={props.yolo ?? false} />
-        <SessionPanel state={state()} />
-        <Transcript entries={state().entries} />
-        <Composer input={state().input} phase={state().phase} />
-        <Footer cwd={state().cwd} />
-      </box>
-      <Show when={wide()}>
-        <Sidebar model={model} state={state()} yolo={props.yolo ?? false} />
-      </Show>
+    <box
+      width="100%"
+      height="100%"
+      flexDirection="column"
+      backgroundColor={color.background}
+      paddingLeft={2}
+      paddingRight={2}
+      paddingTop={1}
+    >
+      <Header model={model} status={state().status} workflow={state().workflow} yolo={props.yolo ?? false} />
+      <SessionPanel state={state()} />
+      <Transcript entries={state().entries} />
+      <Composer input={state().input} phase={state().phase} />
+      <Footer cwd={state().cwd} />
     </box>
   )
 }
@@ -152,6 +157,12 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
 function backendEntry(status: number): TuiEntry {
   if (status === 0) return { kind: "system", text: "Turn complete. Type a follow-up or press q to exit." }
   return { kind: "error", text: `Backend exited with status ${status}.` }
+}
+
+function completionEntries(status: number, workflow: WorkflowState | undefined): readonly TuiEntry[] {
+  if (status !== 0 || !workflow) return []
+  const entry = workflowCompletionEntry(workflow)
+  return entry ? [entry] : []
 }
 
 function upsertEntry(entries: readonly TuiEntry[], entry: TuiEntry): readonly TuiEntry[] {
