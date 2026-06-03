@@ -2,7 +2,7 @@ import { DEFAULT_COMPOSER_MODEL, DEFAULT_CURSOR_AGENT_BIN, type CursorAgentComma
 import { readCursorStreamJson } from "./cursor-stream"
 import { runOpenComposerOpenTui } from "./opentui"
 import { runWorkflowTurn, writeWorkflowState, type WorkflowProgress, type WorkflowStageId } from "./workflow"
-export { isSubmitKey } from "./keyboard"
+export { isSubmitKey, printableKey } from "./keyboard"
 
 type TuiOptions = {
   readonly backend?: string

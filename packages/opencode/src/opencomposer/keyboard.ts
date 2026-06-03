@@ -20,7 +20,8 @@ export function isBackspaceKey(input: KeyboardInput) {
 }
 
 export function printableKey(input: KeyboardInput) {
-  if (input.ctrl || input.meta || input.raw.length !== 1 || isSubmitKey(input) || isBackspaceKey(input))
+  if (input.ctrl || input.meta || input.raw.length === 0 || isSubmitKey(input) || isBackspaceKey(input))
     return undefined
+  if (/[\x00-\x1f\x7f]/.test(input.raw)) return undefined
   return input.raw
 }

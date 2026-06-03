@@ -3,6 +3,7 @@ import {
   createOpenComposerTuiDryRun,
   createTuiBackendCommand,
   isSubmitKey,
+  printableKey,
   selectOpenComposerTuiRunner,
 } from "@/opencomposer/tui"
 import { renderOpenComposerFrame } from "@/opencomposer/tui-render"
@@ -160,5 +161,11 @@ describe("opencomposer tui", () => {
     expect(isSubmitKey({ name: "return", raw: "\r" })).toBe(true)
     expect(isSubmitKey({ name: "linefeed", raw: "\n" })).toBe(true)
     expect(isSubmitKey({ name: "enter", raw: "\r" })).toBe(true)
+  })
+
+  test("Given OpenTUI emits pasted or IME text When handling keyboard input Then printable text is preserved", () => {
+    expect(printableKey({ name: "paste", raw: "Need strict proof" })).toBe("Need strict proof")
+    expect(printableKey({ name: "text", raw: "한국어 답변" })).toBe("한국어 답변")
+    expect(printableKey({ name: "up", raw: "\u001b[A" })).toBeUndefined()
   })
 })
