@@ -2,6 +2,11 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 
 export const WORKFLOW_STAGE_IDS = ["deep-interview", "ralplan", "ultragoal", "team", "execute"] as const
+export const DEEP_INTERVIEW_QUESTIONS = [
+  "What result should OpenComposer produce?",
+  "What constraints, non-goals, or preferences must be preserved?",
+  "What evidence should prove the work is complete?",
+] as const
 
 export type WorkflowStageId = (typeof WORKFLOW_STAGE_IDS)[number]
 export type WorkflowStageStatus = "pending" | "running" | "done" | "failed" | "skipped"
@@ -37,6 +42,18 @@ export type WorkflowResult = {
   readonly workflow: WorkflowState
 }
 
+export type DeepInterviewGate = {
+  readonly answers: readonly string[]
+  readonly prompt: string
+  readonly questionIndex: number
+  readonly questions: readonly string[]
+}
+
+export type DeepInterviewGateResult =
+  | { readonly gate: DeepInterviewGate; readonly kind: "next" }
+  | { readonly kind: "complete"; readonly prompt: string }
+  | { readonly kind: "skip"; readonly prompt: string }
+
 export function createInitialWorkflow(input: {
   readonly prompt: string
   readonly teamEnabled?: boolean
@@ -49,6 +66,43 @@ export function createInitialWorkflow(input: {
       status:
         (id === "deep-interview" && skipDeepInterview) || (id === "team" && !input.teamEnabled) ? "skipped" : "pending",
     })),
+  }
+}
+
+export function createDeepInterviewGate(prompt: string): DeepInterviewGate | undefined {
+  if (shouldSkipDeepInterview(prompt)) return undefined
+  return {
+    answers: [],
+    prompt,
+    questionIndex: 0,
+    questions: DEEP_INTERVIEW_QUESTIONS,
+  }
+}
+
+export function answerDeepInterviewGate(gate: DeepInterviewGate, answer: string): DeepInterviewGateResult {
+  const trimmed = answer.trim()
+  if (isDeepInterviewRuntimeSkip(trimmed)) {
+    return {
+      kind: "skip",
+      prompt: `${gate.prompt}\n\nOpenComposer control: skip the deep interview.`,
+    }
+  }
+
+  const answers = [...gate.answers, trimmed]
+  if (answers.length < gate.questions.length) {
+    return {
+      gate: {
+        ...gate,
+        answers,
+        questionIndex: answers.length,
+      },
+      kind: "next",
+    }
+  }
+
+  return {
+    kind: "complete",
+    prompt: createDeepInterviewAnsweredPrompt({ answers, prompt: gate.prompt, questions: gate.questions }),
   }
 }
 
@@ -247,6 +301,23 @@ function shouldSkipDeepInterview(prompt: string) {
     "인터뷰 생략",
     "인터뷰 하지마",
   ].some((phrase) => normalized.includes(phrase))
+}
+
+function isDeepInterviewRuntimeSkip(answer: string) {
+  const normalized = answer.toLowerCase()
+  return normalized === "/skip" || normalized === "/skip deep interview" || shouldSkipDeepInterview(answer)
+}
+
+function createDeepInterviewAnsweredPrompt(input: {
+  readonly answers: readonly string[]
+  readonly prompt: string
+  readonly questions: readonly string[]
+}) {
+  const answers = input.answers.map((answer, index) => {
+    const question = input.questions[index] ?? `Question ${index + 1}`
+    return `Q${index + 1}: ${question}\nA${index + 1}: ${answer}`
+  })
+  return [input.prompt, "Deep-interview user answers:", ...answers].join("\n\n")
 }
 
 function stageLabel(stage: WorkflowStageId) {

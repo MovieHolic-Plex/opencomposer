@@ -6,14 +6,21 @@ import { DEFAULT_COMPOSER_MODEL } from "./cursor-agent"
 import { isBackspaceKey, isSubmitKey, printableKey } from "./keyboard"
 import { color, Composer, Footer, Header, SessionPanel, Transcript } from "./opentui-view"
 import type { TuiEntry } from "./tui-render"
-import { workflowCompletionEntry, type WorkflowState } from "./workflow"
+import {
+  answerDeepInterviewGate,
+  createDeepInterviewGate,
+  workflowCompletionEntry,
+  type DeepInterviewGate,
+  type WorkflowState,
+} from "./workflow"
 
 export type OpenTuiState = {
   readonly cwd: string
   readonly entries: readonly TuiEntry[]
   readonly hasSession: boolean
   readonly input: string
-  readonly phase: "editing" | "running"
+  readonly interview?: DeepInterviewGate
+  readonly phase: "editing" | "interview" | "running"
   readonly status: string
   readonly workflow?: WorkflowState
 }
@@ -57,13 +64,56 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
   const [exitStatus, setExitStatus] = createSignal(0)
 
   const submit = (value = state().input) => {
-    const prompt = value.trim()
-    if (!prompt || state().phase === "running") return
     const current = state()
+    if (current.phase === "interview") {
+      submitInterviewAnswer(current, value)
+      return
+    }
+    const prompt = value.trim()
+    if (!prompt || current.phase === "running") return
+    const entries = [...current.entries, { kind: "user" as const, text: prompt }]
+    const interview = createDeepInterviewGate(prompt)
+    if (interview) {
+      setState({
+        ...current,
+        entries: [...entries, interviewQuestionEntry(interview)],
+        input: "",
+        interview,
+        phase: "interview",
+        status: "INTERVIEW",
+      })
+      return
+    }
+    runBackend(prompt, current, entries)
+  }
+
+  const submitInterviewAnswer = (current: OpenTuiState, value: string) => {
+    const answer = value.trim()
+    if (!answer || !current.interview) return
+    const result = answerDeepInterviewGate(current.interview, answer)
+    const entries = [...current.entries, { kind: "user" as const, text: answer }]
+    if (result.kind === "next") {
+      setState({
+        ...current,
+        entries: [...entries, interviewQuestionEntry(result.gate)],
+        input: "",
+        interview: result.gate,
+      })
+      return
+    }
+    const summary =
+      result.kind === "skip"
+        ? "deep-interview explicitly skipped; continuing workflow."
+        : "deep-interview answers captured; starting workflow."
+    runBackend(result.prompt, current, [...entries, { kind: "system", text: summary }])
+  }
+
+  const runBackend = (prompt: string, current: OpenTuiState, entries: readonly TuiEntry[]) => {
     setState({
       ...current,
-      entries: [...current.entries, { kind: "user", text: prompt }],
+      entries,
       input: "",
+      interview: undefined,
       phase: "running",
       status: "RUNNING",
     })
@@ -147,11 +197,47 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
     >
       <Header model={model} status={state().status} workflow={state().workflow} yolo={props.yolo ?? false} />
       <SessionPanel state={state()} />
+      <DeepInterviewPanel interview={state().interview} />
       <Transcript entries={state().entries} />
       <Composer input={state().input} phase={state().phase} />
       <Footer cwd={state().cwd} />
     </box>
   )
+}
+
+function DeepInterviewPanel(props: { readonly interview?: DeepInterviewGate }) {
+  const interview = props.interview
+  if (!interview) return null
+  const question = interview.questions[interview.questionIndex] ?? "Confirm the request before continuing."
+  return (
+    <box
+      border
+      borderColor={color.accent}
+      flexDirection="column"
+      marginBottom={1}
+      paddingLeft={1}
+      paddingRight={1}
+      flexShrink={0}
+    >
+      <text fg={color.accent}>
+        <b>Deep interview</b> {interview.questionIndex + 1}/{interview.questions.length}
+      </text>
+      <text fg={color.text}>{question}</text>
+      <text fg={color.muted}>Answer to continue. Type /skip deep interview only to bypass this gate.</text>
+    </box>
+  )
+}
+
+function interviewQuestionEntry(interview: DeepInterviewGate): TuiEntry {
+  const question = interview.questions[interview.questionIndex] ?? "Confirm the request before continuing."
+  return {
+    kind: "system",
+    text: [
+      "## Deep interview",
+      `${interview.questionIndex + 1}/${interview.questions.length}. ${question}`,
+      "Answer before ralplan, ultragoal, or execute can start.",
+    ].join("\n"),
+  }
 }
 
 function backendEntry(status: number): TuiEntry {

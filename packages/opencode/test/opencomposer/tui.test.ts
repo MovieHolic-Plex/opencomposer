@@ -123,6 +123,31 @@ describe("opencomposer tui", () => {
     expect(frame).toContain("workflow ralplan running")
   })
 
+  test("Given deep interview phase When rendering Then the user sees the active interview question", () => {
+    const frame = renderOpenComposerFrame({
+      cwd: "/workspace/app",
+      entries: [{ kind: "user", text: "fix tests" }],
+      hasSession: false,
+      input: "Need strict proof",
+      interview: {
+        answers: [],
+        prompt: "fix tests",
+        questionIndex: 0,
+        questions: ["What result should OpenComposer produce?", "What constraints matter?"],
+      },
+      model: "composer-2.5",
+      phase: "interview",
+      status: "INTERVIEW",
+      width: 120,
+      yolo: true,
+    })
+
+    expect(frame).toContain("Deep interview")
+    expect(frame).toContain("1/2")
+    expect(frame).toContain("What result should OpenComposer produce?")
+    expect(frame).toContain("Need strict proof")
+  })
+
   test("Given an interactive terminal When selecting a runner Then OpenTUI is the default surface", () => {
     expect(selectOpenComposerTuiRunner({ stdinTty: true, stdoutTty: true })).toBe("opentui")
   })

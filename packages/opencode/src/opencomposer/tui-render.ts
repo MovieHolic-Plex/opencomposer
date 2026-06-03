@@ -1,4 +1,4 @@
-import { workflowStatusSummary, type WorkflowState } from "./workflow"
+import { workflowStatusSummary, type DeepInterviewGate, type WorkflowState } from "./workflow"
 
 export type TuiEntry = {
   readonly id?: string
@@ -11,8 +11,9 @@ export type TuiRenderInput = {
   readonly entries: readonly TuiEntry[]
   readonly hasSession: boolean
   readonly input: string
+  readonly interview?: DeepInterviewGate
   readonly model: string
-  readonly phase: "editing" | "running"
+  readonly phase: "editing" | "interview" | "running"
   readonly status: string
   readonly width: number
   readonly workflow?: WorkflowState
@@ -28,6 +29,8 @@ export function renderOpenComposerFrame(input: TuiRenderInput) {
     rule(width),
     ...sessionLines(input, width),
     blank(width),
+    ...interviewLines(input, width),
+    ...(input.phase === "interview" ? [blank(width)] : []),
     ...transcriptLines(input.entries, width),
     blank(width),
     composerLine(input, width),
@@ -51,6 +54,16 @@ function sessionLines(input: TuiRenderInput, width: number) {
   ]
 }
 
+function interviewLines(input: TuiRenderInput, width: number) {
+  if (input.phase !== "interview" || !input.interview) return []
+  const question = input.interview.questions[input.interview.questionIndex] ?? "Confirm the request before continuing."
+  return [
+    fit(`Deep interview ${input.interview.questionIndex + 1}/${input.interview.questions.length}`, width),
+    fit(`  ${question}`, width),
+    fit("  answer required before ralplan, ultragoal, or execute", width),
+  ]
+}
+
 function transcriptLines(entries: readonly TuiEntry[], width: number) {
   const visible = entries.length === 0 ? [{ kind: "system" as const, text: "ready" }] : entries.slice(-12)
   return [fit("Transcript", width), ...visible.flatMap((entry) => wrappedEntry(entry, width))]
@@ -62,6 +75,7 @@ function wrappedEntry(entry: TuiEntry, width: number) {
 }
 
 function composerLine(input: TuiRenderInput, width: number) {
+  if (input.phase === "interview") return fit(`Deep interview  > ${input.input}`, width)
   const label = input.phase === "running" ? "running Composer backend..." : `> ${input.input}`
   return fit(`Composer  ${label}`, width)
 }

@@ -20,6 +20,9 @@ Maintained translations: [한국어](README.ko.md), [日本語](README.ja.md),
 - Workflow: interactive turns run `deep-interview -> ralplan -> ultragoal ->
 execute`; set `OPENCOMPOSER_ENABLE_TEAM=1` to include the optional `team`
   stage before execution
+- Deep interview gate: unless the prompt explicitly says to skip it, the TUI
+  asks interview questions and does not start `ralplan`, `ultragoal`, or
+  `execute` until answers are submitted
 - State: every workflow update is written to `.opencomposer/workflow.json`
 - Follow-up turns: the TUI sends later turns with `--continue`
 - YOLO mode: `--yolo` forwards unattended Cursor Agent flags

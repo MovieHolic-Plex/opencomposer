@@ -20,6 +20,8 @@ interface를 붙입니다.
 - Workflow: interactive turn은 `deep-interview -> ralplan -> ultragoal -> execute`를
   순서대로 실행합니다. `OPENCOMPOSER_ENABLE_TEAM=1`을 주면 execution 전에 optional
   `team` stage도 실행합니다.
+- Deep interview gate: prompt에서 명시적으로 생략하라고 하지 않는 한, TUI가 interview
+  질문을 받고 답변이 들어오기 전에는 `ralplan`, `ultragoal`, `execute`를 시작하지 않습니다.
 - State: workflow update는 매번 `.opencomposer/workflow.json`에 기록됩니다.
 - 이어지는 대화: TUI follow-up turn은 `--continue`로 전달
 - YOLO mode: `--yolo`가 Cursor Agent unattended 실행 flag를 전달

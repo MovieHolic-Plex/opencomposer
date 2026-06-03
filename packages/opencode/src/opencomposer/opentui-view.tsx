@@ -87,9 +87,17 @@ function TranscriptEntry(props: { readonly entry: TuiEntry }) {
 }
 
 export function Composer(props: { readonly input: string; readonly phase: OpenTuiState["phase"] }) {
+  const label = props.phase === "interview" ? "deep-interview ›" : "›"
   return (
     <box border borderColor={color.borderActive} paddingLeft={1} paddingRight={1} marginTop={1} flexShrink={0}>
-      <Show when={props.phase === "running"} fallback={<text fg={color.text}>› {props.input}</text>}>
+      <Show
+        when={props.phase === "running"}
+        fallback={
+          <text fg={color.text}>
+            {label} {props.input}
+          </text>
+        }
+      >
         <box flexDirection="row" gap={1}>
           <spinner frames={["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]} interval={80} color={color.accent} />
           <text fg={color.muted}>running Composer backend...</text>

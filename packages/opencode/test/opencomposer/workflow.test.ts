@@ -3,6 +3,8 @@ import { mkdtemp } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import {
+  answerDeepInterviewGate,
+  createDeepInterviewGate,
   createInitialWorkflow,
   runWorkflowTurn,
   workflowCompletionEntry,
@@ -40,6 +42,42 @@ describe("opencomposer workflow", () => {
     const workflow = createInitialWorkflow({ prompt: "I do not want to skip deep interview; fix tests" })
 
     expect(workflow.stages[0]).toEqual({ id: "deep-interview", status: "pending" })
+  })
+
+  test("Given a normal prompt When starting the TUI workflow Then deep interview opens before backend execution", () => {
+    const gate = createDeepInterviewGate("fix tests")
+
+    expect(gate?.questionIndex).toBe(0)
+    expect(gate?.questions.length).toBeGreaterThan(1)
+    expect(gate?.answers).toEqual([])
+  })
+
+  test("Given explicit skip text When starting the TUI workflow Then deep interview gate is not opened", () => {
+    const gate = createDeepInterviewGate("skip the deep interview and fix tests")
+
+    expect(gate).toBeUndefined()
+  })
+
+  test("Given interview answers When completing the gate Then workflow prompt carries the answers forward", () => {
+    const gate = createDeepInterviewGate("fix tests")
+    expect(gate).toBeDefined()
+    if (!gate) return
+
+    const first = answerDeepInterviewGate(gate, "Fix the broken TUI behavior.")
+    expect(first.kind).toBe("next")
+    if (first.kind !== "next") return
+
+    const second = answerDeepInterviewGate(first.gate, "Do not skip interview unless explicitly requested.")
+    expect(second.kind).toBe("next")
+    if (second.kind !== "next") return
+
+    const third = answerDeepInterviewGate(second.gate, "Tests must prove the workflow waits for answers.")
+    expect(third.kind).toBe("complete")
+    if (third.kind !== "complete") return
+
+    expect(third.prompt).toContain("Deep-interview user answers")
+    expect(third.prompt).toContain("Fix the broken TUI behavior.")
+    expect(third.prompt).toContain("Tests must prove the workflow waits for answers.")
   })
 
   test("Given a completed workflow When summarizing Then a short markdown completion entry is created", async () => {

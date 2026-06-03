@@ -18,6 +18,8 @@ Translations: [English](README.md), [한국어](README.ko.md),
 - workflow：interactive turn 會按 `deep-interview -> ralplan -> ultragoal -> execute`
   順序執行。設定 `OPENCOMPOSER_ENABLE_TEAM=1` 後，會在 execution 前加入 optional
   `team` stage。
+- Deep interview gate：除非 prompt 明確要求跳過，否則 TUI 會先提出 interview 問題；在收到
+  回答前不會啟動 `ralplan`、`ultragoal` 或 `execute`。
 - state：每次 workflow update 都會寫入 `.opencomposer/workflow.json`。
 - 後續對話：TUI follow-up turn 會透過 `--continue` 傳送
 - YOLO mode：`--yolo` 會傳遞 Cursor Agent unattended execution flags
