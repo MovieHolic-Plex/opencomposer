@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 describe("opencomposer cli", () => {
-  test("Given no command mode When running the source CLI dry-run Then it prints a Composer Cursor Agent TUI command", async () => {
+  test("Given no command mode When running the source CLI dry-run Then it prints the opencomposer TUI launcher", async () => {
     const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run"], {
       cwd: import.meta.dir.replace("/test/opencomposer", ""),
       stdout: "pipe",
@@ -13,10 +13,10 @@ describe("opencomposer cli", () => {
 
     expect(await proc.exited).toBe(0)
     expect(stderr).toBe("")
-    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5")
+    expect(stdout.trim()).toBe("opencomposer-tui --backend cursor-agent --model composer-2.5")
   })
 
-  test("Given a prompt When running the source CLI dry-run Then it opens Cursor Agent TUI with an initial prompt", async () => {
+  test("Given a prompt When running the source CLI dry-run Then it opens opencomposer TUI with an initial prompt", async () => {
     const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "fix tests"], {
       cwd: import.meta.dir.replace("/test/opencomposer", ""),
       stdout: "pipe",
@@ -28,7 +28,7 @@ describe("opencomposer cli", () => {
 
     expect(await proc.exited).toBe(0)
     expect(stderr).toBe("")
-    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5 'fix tests'")
+    expect(stdout.trim()).toBe("opencomposer-tui --backend cursor-agent --model composer-2.5 --prompt 'fix tests'")
   })
 
   test("Given opencode TUI mode When running dry-run Then it opens the upstream TUI shell", async () => {
@@ -82,7 +82,7 @@ describe("opencomposer cli", () => {
     expect(stdout.trim()).toBe("cursor-agent --model composer-2.5-fast acp")
   })
 
-  test("Given yolo mode When running TUI dry-run Then it passes Cursor Agent yolo flags", async () => {
+  test("Given yolo mode When running TUI dry-run Then it prints opencomposer yolo TUI launcher", async () => {
     const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "--yolo", "fix tests"], {
       cwd: import.meta.dir.replace("/test/opencomposer", ""),
       stdout: "pipe",
@@ -94,6 +94,8 @@ describe("opencomposer cli", () => {
 
     expect(await proc.exited).toBe(0)
     expect(stderr).toBe("")
-    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5 --yolo --sandbox disabled --approve-mcps 'fix tests'")
+    expect(stdout.trim()).toBe(
+      "opencomposer-tui --backend cursor-agent --model composer-2.5 --yolo --prompt 'fix tests'",
+    )
   })
 })

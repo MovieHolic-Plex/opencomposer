@@ -16,8 +16,9 @@ This repository is at the fork-foundation stage.
 - Runtime backend: `cursor-agent`
 - First bridge: `packages/opencode/src/opencomposer`
 
-The `opencomposer` command opens the Cursor Agent interactive TUI with
-`composer-2.5` by default. Headless and ACP modes use the same default model.
+The `opencomposer` command opens the opencomposer-owned TUI by default. Cursor
+Agent is not exposed as the visible interface; it is invoked as the Composer 2.5
+backend. Headless and ACP modes still run Cursor Agent directly when requested.
 The upstream OpenCode TUI shell is not wired to the Composer backend yet, so it
 is exposed separately through the experimental `--opencode-tui` option.
 
@@ -43,8 +44,8 @@ bun run --cwd packages/opencode opencomposer --dry-run --opencode-tui
 Expected dry run:
 
 ```bash
-cursor-agent --model composer-2.5
-cursor-agent --model composer-2.5 'fix tests'
+opencomposer-tui --backend cursor-agent --model composer-2.5
+opencomposer-tui --backend cursor-agent --model composer-2.5 --prompt 'fix tests'
 cd .../packages/opencode && bun run --conditions=browser .../src/index.ts ...
 ```
 
@@ -66,7 +67,7 @@ opencomposer --headless --yolo "fix tests"
 ```
 
 Default TUI/headless/ACP yolo passes `--yolo --sandbox disabled --approve-mcps`
-to Cursor Agent. `--opencode-tui --yolo` injects
+to the internal Composer backend. `--opencode-tui --yolo` injects
 `OPENCODE_PERMISSION='{"*":"allow"}'` only into that child process.
 
 Override the model when needed:

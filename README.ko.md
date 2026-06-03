@@ -17,10 +17,11 @@ model/runtime backend로 두고 OpenCode의 terminal product surface를 그 위�
 - Runtime backend: `cursor-agent`
 - 첫 bridge 위치: `packages/opencode/src/opencomposer`
 
-`opencomposer` 명령은 기본적으로 Cursor Agent interactive TUI를
-`composer-2.5` 모델로 바로 엽니다. headless 또는 ACP mode도 같은 기본 모델을
-사용합니다. upstream OpenCode TUI shell은 아직 Composer backend에 연결되지
-않았으므로 `--opencode-tui` 실험 옵션으로 분리했습니다.
+`opencomposer` 명령은 기본적으로 opencomposer 자체 TUI를 엽니다. Cursor Agent는
+화면으로 직접 노출되지 않고 Composer 2.5 backend로만 호출됩니다. headless 또는
+ACP mode를 명시한 경우에만 Cursor Agent 명령을 직접 실행합니다. upstream
+OpenCode TUI shell은 아직 Composer backend에 연결되지 않았으므로
+`--opencode-tui` 실험 옵션으로 분리했습니다.
 
 ## 사용법
 
@@ -44,8 +45,8 @@ bun run --cwd packages/opencode opencomposer --dry-run --opencode-tui
 예상 dry run:
 
 ```bash
-cursor-agent --model composer-2.5
-cursor-agent --model composer-2.5 'fix tests'
+opencomposer-tui --backend cursor-agent --model composer-2.5
+opencomposer-tui --backend cursor-agent --model composer-2.5 --prompt 'fix tests'
 cd .../packages/opencode && bun run --conditions=browser .../src/index.ts ...
 ```
 
@@ -66,7 +67,7 @@ opencomposer --yolo
 opencomposer --headless --yolo "fix tests"
 ```
 
-기본 TUI/headless/ACP yolo는 Cursor Agent에 `--yolo --sandbox disabled
+기본 TUI/headless/ACP yolo는 내부 Composer backend에 `--yolo --sandbox disabled
 --approve-mcps`를 전달합니다. `--opencode-tui --yolo`는 해당 실행에만
 `OPENCODE_PERMISSION='{"*":"allow"}'`를 주입합니다.
 

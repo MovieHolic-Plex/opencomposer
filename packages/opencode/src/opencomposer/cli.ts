@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { DEFAULT_CURSOR_AGENT_BIN, buildCursorAgentArgs, formatShellCommand } from "./cursor-agent"
 import { buildOpencodeTuiCommand } from "./opencode-tui"
+import { createOpenComposerTuiDryRun, runOpenComposerTui } from "./tui"
 
 type CliOptions = {
   readonly bin: string
@@ -21,6 +22,25 @@ class UsageError extends Error {
 
 export async function main(argv: readonly string[]) {
   const options = parseArgs(argv)
+  if (options.mode === "tui") {
+    if (options.dryRun) {
+      process.stdout.write(
+        createOpenComposerTuiDryRun({
+          backend: options.bin,
+          model: options.model,
+          prompt: options.prompt,
+          yolo: options.yolo,
+        }) + "\n",
+      )
+      return 0
+    }
+    return await runOpenComposerTui({
+      backend: options.bin,
+      model: options.model,
+      prompt: options.prompt,
+      yolo: options.yolo,
+    })
+  }
   const command =
     options.mode === "opencode-tui"
       ? buildOpencodeTuiCommand({
@@ -32,7 +52,7 @@ export async function main(argv: readonly string[]) {
       : {
           bin: options.bin,
           args: buildCursorAgentArgs({
-            mode: options.mode === "tui" ? "interactive" : options.mode,
+            mode: options.mode,
             model: options.model,
             prompt: options.prompt,
             yolo: options.yolo,
@@ -155,11 +175,11 @@ function helpText() {
     "",
     "Options:",
     "  --model, -m <id>          Cursor Agent model, defaults to composer-2.5",
-    "  --tui                    Start Cursor Agent interactive TUI (default)",
+    "  --tui                    Start the opencomposer TUI (default)",
     "  --opencode-tui           Start the upstream OpenCode TUI shell",
     "  --acp                    Start cursor-agent ACP mode",
     "  --headless               Force headless prompt mode",
-    "  --yolo                   Run unattended: allow Cursor commands and opencode permissions",
+    "  --yolo                   Run unattended through the Composer backend",
     "  --project <path>          Project directory for TUI mode",
     "  --cursor-agent-bin <bin>  Cursor Agent executable",
     "  --dry-run                Print the command without executing",
