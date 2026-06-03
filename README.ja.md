@@ -1,129 +1,98 @@
-<p align="center">
-  <a href="https://opencode.ai">
-    <picture>
-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
-    </picture>
-  </a>
-</p>
-<p align="center">オープンソースのAIコーディングエージェント。</p>
-<p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
-</p>
+# opencomposer
 
-<p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh.md">简体中文</a> |
-  <a href="README.zht.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.br.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.gr.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
-</p>
+OpenComposer は、Cursor Composer 2.5 をより使いやすい terminal surface で扱うための
+OpenCode fork です。
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+Composer 2.5 は Cursor Agent 経由でのみ利用できます。OpenComposer はモデルを再実装
+しません。Cursor Agent を runtime backend として使い、その前面に OpenTUI ベースの
+interface を置きます。
 
----
+Translations: [English](README.md), [한국어](README.ko.md),
+[简体中文](README.zh.md), [繁體中文](README.zht.md).
 
-### インストール
+## 現在動くもの
+
+- default model: `composer-2.5`
+- default command: `opencomposer`
+- default UI: transcript、composer input、status、wide terminal 向け workflow/sidebar
+  rail を持つ OpenTUI session surface
+- backend: `cursor-agent --model composer-2.5 --print --trust --force`
+- follow-up turns: TUI の後続 turn は `--continue` で送信
+- YOLO mode: `--yolo` が Cursor Agent の unattended 実行 flag を渡します
+- escape hatches: `--headless`, `--acp`, experimental `--opencode-tui`
+
+## Quick Start
+
+checked-out repository から:
 
 ```bash
-# YOLO
-curl -fsSL https://opencode.ai/install | bash
+bun install
+ln -sf "$PWD/packages/opencode/bin/opencomposer" ~/.local/bin/opencomposer
 
-# パッケージマネージャー
-npm i -g opencode-ai@latest        # bun/pnpm/yarn でもOK
-scoop install opencode             # Windows
-choco install opencode             # Windows
-brew install anomalyco/tap/opencode # macOS と Linux（推奨。常に最新）
-brew install opencode              # macOS と Linux（公式 brew formula。更新頻度は低め）
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-bin               # Arch Linux (Latest from AUR)
-mise use -g opencode               # どのOSでも
-nix run nixpkgs#opencode           # または github:anomalyco/opencode で最新 dev ブランチ
+cd /path/to/your/project
+opencomposer
 ```
 
-> [!TIP]
-> インストール前に 0.1.x より古いバージョンを削除してください。
-
-### デスクトップアプリ (BETA)
-
-OpenCode はデスクトップアプリとしても利用できます。[releases page](https://github.com/anomalyco/opencode/releases) から直接ダウンロードするか、[opencode.ai/download](https://opencode.ai/download) を利用してください。
-
-| プラットフォーム      | ダウンロード                       |
-| --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-windows-x64.exe` |
-| Linux                 | `.deb`、`.rpm`、または AppImage    |
+よく使うコマンド:
 
 ```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
-# Windows (Scoop)
-scoop bucket add extras; scoop install extras/opencode-desktop
+opencomposer --yolo
+opencomposer --headless "fix the failing tests"
+opencomposer --headless --yolo "run the migration and fix errors"
+opencomposer --acp
+opencomposer --opencode-tui
 ```
 
-#### インストールディレクトリ
-
-インストールスクリプトは、インストール先パスを次の優先順位で決定します。
-
-1. `$OPENCODE_INSTALL_DIR` - カスタムのインストールディレクトリ
-2. `$XDG_BIN_DIR` - XDG Base Directory Specification に準拠したパス
-3. `$HOME/bin` - 標準のユーザー用バイナリディレクトリ（存在する場合、または作成できる場合）
-4. `$HOME/.opencode/bin` - デフォルトのフォールバック
+command wiring の確認:
 
 ```bash
-# 例
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
+opencomposer --dry-run
+opencomposer --dry-run --headless "fix tests"
+opencomposer --dry-run --acp
 ```
 
-### Agents
+Expected output:
 
-OpenCode には組み込みの Agent が2つあり、`Tab` キーで切り替えられます。
+```bash
+opencomposer-tui --backend cursor-agent --model composer-2.5
+cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+cursor-agent --model composer-2.5 acp
+```
 
-- **build** - デフォルト。開発向けのフルアクセス Agent
-- **plan** - 分析とコード探索向けの読み取り専用 Agent
-  - デフォルトでファイル編集を拒否
-  - bash コマンド実行前に確認
-  - 未知のコードベース探索や変更計画に最適
+## 制限
 
-また、複雑な検索やマルチステップのタスク向けに **general** サブ Agent も含まれています。
-内部的に使用されており、メッセージで `@general` と入力して呼び出せます。
+OpenComposer はまだ bridge layer であり、OpenCode 全体を再設計したものではありません。
 
-[agents](https://opencode.ai/docs/agents) の詳細はこちら。
+- model runtime は Cursor Agent のままです。
+- model selection は Cursor Agent model ID に制限されます。
+- default OpenComposer TUI は bridge 用に作った OpenTUI-based surface です。
+- upstream OpenCode TUI は `--opencode-tui` として残していますが、Composer session に
+  完全には接続されていません。
 
-### ドキュメント
+## Development
 
-OpenCode の設定については [**ドキュメント**](https://opencode.ai/docs) を参照してください。
+OpenComposer code は `packages/opencode/src/opencomposer` にあります。
 
-### コントリビュート
+checks は package directory から実行します。
 
-OpenCode に貢献したい場合は、Pull Request を送る前に [contributing docs](./CONTRIBUTING.md) を読んでください。
+```bash
+cd packages/opencode
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun typecheck
+```
 
-### OpenCode の上に構築する
+## Security
 
-OpenCode に関連するプロジェクトで、名前に "opencode"（例: "opencode-dashboard" や "opencode-mobile"）を含める場合は、そのプロジェクトが OpenCode チームによって作られたものではなく、いかなる形でも関係がないことを README に明記してください。
+OpenComposer は現在の project directory で Cursor Agent を child process として実行
+します。`--yolo` は unattended execution mode であり、Cursor Agent approval flags を
+渡すため広い tool execution を許可する可能性があります。
 
----
+Cursor credentials、project secrets、`.env` files、private keys、local Cursor/agent
+state を公開 repository に含めないでください。
 
-**コミュニティに参加** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+## OpenCode / Cursor との関係
+
+This is an independent fork. OpenCode または Cursor によって作成、支援、承認された
+project ではありません。
+
+OpenCode source and license notices are preserved under the MIT License.

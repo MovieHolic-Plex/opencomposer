@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test"
-import { createOpenComposerTuiDryRun, createTuiBackendCommand, selectOpenComposerTuiRunner } from "@/opencomposer/tui"
+import {
+  createOpenComposerTuiDryRun,
+  createTuiBackendCommand,
+  isSubmitKey,
+  selectOpenComposerTuiRunner,
+} from "@/opencomposer/tui"
 import { renderOpenComposerFrame } from "@/opencomposer/tui-render"
 
 describe("opencomposer tui", () => {
@@ -83,5 +88,11 @@ describe("opencomposer tui", () => {
 
   test("Given a non-interactive prompt When selecting a runner Then it uses direct backend output", () => {
     expect(selectOpenComposerTuiRunner({ prompt: "fix tests", stdinTty: false, stdoutTty: true })).toBe("headless")
+  })
+
+  test("Given OpenTUI return and linefeed events When handling keyboard input Then both submit the prompt", () => {
+    expect(isSubmitKey({ name: "return", raw: "\r" })).toBe(true)
+    expect(isSubmitKey({ name: "linefeed", raw: "\n" })).toBe(true)
+    expect(isSubmitKey({ name: "enter", raw: "\r" })).toBe(true)
   })
 })

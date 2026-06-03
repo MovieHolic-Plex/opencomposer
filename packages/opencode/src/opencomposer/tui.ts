@@ -1,4 +1,5 @@
 import { DEFAULT_COMPOSER_MODEL, DEFAULT_CURSOR_AGENT_BIN, type CursorAgentCommand } from "./cursor-agent"
+export { isSubmitKey } from "./keyboard"
 import { runOpenComposerOpenTui } from "./opentui"
 import type { TuiEntry } from "./tui-render"
 

@@ -3,6 +3,7 @@ import { createCliRenderer } from "@opentui/core"
 import { render, useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createMemo, createSignal, onMount, Show } from "solid-js"
 import { DEFAULT_COMPOSER_MODEL } from "./cursor-agent"
+import { isBackspaceKey, isSubmitKey, printableKey } from "./keyboard"
 import { color, Composer, Footer, Header, SessionPanel, Sidebar, Transcript } from "./opentui-view"
 import type { TuiEntry } from "./tui-render"
 
@@ -99,17 +100,18 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
       props.close(exitStatus())
       return
     }
-    if (event.name === "enter") {
+    if (isSubmitKey(event)) {
       event.preventDefault()
       submit()
       return
     }
-    if (event.name === "backspace") {
+    if (isBackspaceKey(event)) {
       setState((next) => ({ ...next, input: next.input.slice(0, -1) }))
       return
     }
-    if (event.raw.length === 1 && !event.ctrl && !event.meta) {
-      setState((next) => ({ ...next, input: `${next.input}${event.raw}` }))
+    const nextCharacter = printableKey(event)
+    if (nextCharacter) {
+      setState((next) => ({ ...next, input: `${next.input}${nextCharacter}` }))
     }
   })
 

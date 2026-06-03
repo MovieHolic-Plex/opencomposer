@@ -1,102 +1,98 @@
 # opencomposer
 
-opencomposer is a Composer 2.5 focused fork of OpenCode.
+OpenComposer is an OpenCode fork for people who want a better terminal surface
+around Cursor Composer 2.5.
 
-The goal is not to reimplement the model. Composer 2.5 is only available through
-Cursor Agent, so opencomposer uses Cursor Agent as the model/runtime backend and
-adapts OpenCode's terminal product surface around it.
+Composer 2.5 is only available through Cursor Agent. OpenComposer does not try
+to reimplement the model. It keeps Cursor Agent as the runtime backend and puts
+an OpenTUI-powered interface in front of it.
 
-## Current Status
+Maintained translations: [한국어](README.ko.md), [日本語](README.ja.md),
+[简体中文](README.zh.md), [繁體中文](README.zht.md).
 
-This repository is at the fork-foundation stage.
+## What Works
 
-- Upstream base: `anomalyco/opencode` / `sst/opencode`, default branch `dev`
-- License: MIT, inherited from OpenCode
 - Default model: `composer-2.5`
-- Runtime backend: `cursor-agent`
-- First bridge: `packages/opencode/src/opencomposer`
+- Default command: `opencomposer`
+- Default UI: OpenTUI session surface with transcript, composer input, status,
+  and a workflow/sidebar rail on wide terminals
+- Backend: `cursor-agent --model composer-2.5 --print --trust --force`
+- Follow-up turns: the TUI sends later turns with `--continue`
+- YOLO mode: `--yolo` forwards unattended Cursor Agent flags
+- Escape hatches: `--headless`, `--acp`, and experimental `--opencode-tui`
 
-The `opencomposer` command opens an OpenTUI-powered session surface by default:
-transcript scrollbox, composer input, status footer, and a workflow/sidebar rail
-on wide terminals. Cursor Agent is not exposed as the visible interface; it is
-invoked as the Composer 2.5 backend. Headless and ACP modes still run Cursor
-Agent directly when requested.
+## Quick Start
 
-The upstream OpenCode TUI shell is kept in the fork and exposed separately
-through the experimental `--opencode-tui` option. The default `opencomposer`
-surface uses OpenTUI components directly so the Composer bridge can stay focused
-on Cursor's headless backend.
-
-## Usage
-
-From this repo:
+From a checked-out copy:
 
 ```bash
+bun install
+ln -sf "$PWD/packages/opencode/bin/opencomposer" ~/.local/bin/opencomposer
+
+cd /path/to/your/project
 opencomposer
-opencomposer "fix tests"
-opencomposer --yolo "fix tests"
-opencomposer --opencode-tui
 ```
 
-`opencomposer` must be launched in a real terminal to show the interactive
-OpenTUI surface. Passing a prompt in a non-interactive shell uses the direct
-headless Composer backend path.
-
-Without installing, from this repository:
-
-```bash
-bun run --cwd packages/opencode opencomposer --dry-run
-bun run --cwd packages/opencode opencomposer --dry-run "fix tests"
-bun run --cwd packages/opencode opencomposer --dry-run --opencode-tui
-```
-
-Expected dry run:
-
-```bash
-opencomposer-tui --backend cursor-agent --model composer-2.5
-opencomposer-tui --backend cursor-agent --model composer-2.5 --prompt 'fix tests'
-cd .../packages/opencode && bun run --conditions=browser .../src/index.ts ...
-```
-
-Headless / ACP bridge:
-
-```bash
-bun run --cwd packages/opencode opencomposer --dry-run --headless "fix tests"
-# cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
-
-bun run --cwd packages/opencode opencomposer --dry-run --acp
-# cursor-agent --model composer-2.5 acp
-```
-
-Yolo:
+Useful variants:
 
 ```bash
 opencomposer --yolo
-opencomposer --headless --yolo "fix tests"
+opencomposer --headless "fix the failing tests"
+opencomposer --headless --yolo "run the migration and fix errors"
+opencomposer --acp
+opencomposer --opencode-tui
 ```
 
-Default TUI/headless/ACP yolo passes `--yolo --sandbox disabled --approve-mcps`
-to the internal Composer backend. `--opencode-tui --yolo` injects
-`OPENCODE_PERMISSION='{"*":"allow"}'` only into that child process.
-
-Override the model when needed:
+Dry-run the command wiring:
 
 ```bash
-bun run --cwd packages/opencode opencomposer --dry-run --model composer-2.5-fast --acp
+opencomposer --dry-run
+opencomposer --dry-run --headless "fix tests"
+opencomposer --dry-run --acp
 ```
 
-## Roadmap
+Expected output:
 
-1. Keep the upstream OpenCode TUI and build system available.
-2. Replace the model/runtime path with a Cursor Agent ACP client.
-3. Route the OpenCode TUI session surface through Cursor ACP updates.
-4. Preserve Composer 2.5 as the default model and show it explicitly in the UI.
-5. Rework provider/model settings so they do not pretend Composer 2.5 is a normal
-   OpenCode provider model.
+```bash
+opencomposer-tui --backend cursor-agent --model composer-2.5
+cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+cursor-agent --model composer-2.5 acp
+```
 
-## Fork Notice
+## Current Limits
 
-opencomposer is an independent fork for Cursor Composer 2.5 workflows. It is not
-built by, sponsored by, or affiliated with the OpenCode team.
+OpenComposer is still a bridge layer, not a complete OpenCode rearchitecture.
 
-OpenCode source and license are preserved under the MIT License in this fork.
+- Cursor Agent remains the model runtime.
+- Model selection is limited to Cursor Agent model IDs.
+- The default OpenComposer TUI is OpenTUI-based and custom-built for the bridge.
+- The upstream OpenCode TUI is preserved under `--opencode-tui`, but it is not
+  fully wired to Composer sessions yet.
+
+## Development
+
+OpenComposer lives under `packages/opencode/src/opencomposer`.
+
+Run checks from the package directory:
+
+```bash
+cd packages/opencode
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun typecheck
+```
+
+## Security
+
+OpenComposer shells out to Cursor Agent in the current project directory. Treat
+`--yolo` as an unattended execution mode: it passes Cursor Agent approval flags
+and can allow broad tool execution.
+
+Do not publish Cursor credentials, project secrets, `.env` files, private keys,
+or local Cursor/agent state.
+
+## Relationship To OpenCode And Cursor
+
+This is an independent fork. It is not built, sponsored, or endorsed by OpenCode
+or Cursor.
+
+OpenCode source and license notices are preserved under the MIT License.
