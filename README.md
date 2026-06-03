@@ -16,9 +16,11 @@ This repository is at the fork-foundation stage.
 - Runtime backend: `cursor-agent`
 - First bridge: `packages/opencode/src/opencomposer`
 
-The `opencomposer` command opens the opencomposer-owned TUI by default. Cursor
-Agent is not exposed as the visible interface; it is invoked as the Composer 2.5
-backend. Headless and ACP modes still run Cursor Agent directly when requested.
+The `opencomposer` command opens an OpenCode-style session surface by default:
+transcript, composer input, status footer, and a workflow/sidebar rail on wide
+terminals. Cursor Agent is not exposed as the visible interface; it is invoked
+as the Composer 2.5 backend. Headless and ACP modes still run Cursor Agent
+directly when requested.
 The upstream OpenCode TUI shell is not wired to the Composer backend yet, so it
 is exposed separately through the experimental `--opencode-tui` option.
 

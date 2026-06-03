@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { createOpenComposerTuiDryRun, createTuiBackendCommand } from "@/opencomposer/tui"
+import { renderOpenComposerFrame } from "@/opencomposer/tui-render"
 
 describe("opencomposer tui", () => {
   test("Given default options When formatting dry-run Then it names opencomposer instead of Cursor Agent", () => {
@@ -49,5 +50,30 @@ describe("opencomposer tui", () => {
     })
 
     expect(command.args).toContain("--continue")
+  })
+
+  test("Given a TUI state When rendering Then it uses an opencode-style session surface", () => {
+    const frame = renderOpenComposerFrame({
+      cwd: "/workspace/app",
+      entries: [
+        { kind: "system", text: "opencomposer ready." },
+        { kind: "user", text: "fix tests" },
+        { kind: "agent", text: "Checking failures." },
+      ],
+      hasSession: true,
+      input: "next task",
+      model: "composer-2.5",
+      phase: "editing",
+      status: "READY",
+      width: 120,
+      yolo: false,
+    })
+
+    expect(frame).toContain("OpenComposer")
+    expect(frame).toContain("Session")
+    expect(frame).toContain("Workflow")
+    expect(frame).toContain("Composer 2.5")
+    expect(frame).toContain("/workspace/app")
+    expect(frame).not.toContain("Cursor Agent")
   })
 })

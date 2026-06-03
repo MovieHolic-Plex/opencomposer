@@ -1,4 +1,5 @@
 import { DEFAULT_COMPOSER_MODEL, DEFAULT_CURSOR_AGENT_BIN, type CursorAgentCommand } from "./cursor-agent"
+import { renderOpenComposerFrame, type TuiEntry } from "./tui-render"
 
 type TuiOptions = {
   readonly backend?: string
@@ -12,14 +13,9 @@ type BackendInput = Required<Pick<TuiOptions, "backend" | "prompt">> &
     readonly turn: "first" | "follow-up"
   }
 
-type Entry = {
-  readonly kind: "agent" | "error" | "system" | "user"
-  readonly text: string
-}
-
 type State = {
   readonly cwd: string
-  readonly entries: readonly Entry[]
+  readonly entries: readonly TuiEntry[]
   readonly hasSession: boolean
   readonly input: string
   readonly phase: "editing" | "running"
@@ -177,12 +173,12 @@ async function runBackendTurn(command: CursorAgentCommand): Promise<BackendResul
   return { output: [stdout, stderr].filter((part) => part.trim().length > 0).join("\n"), status }
 }
 
-function backendEntry(status: number): Entry {
+function backendEntry(status: number): TuiEntry {
   if (status === 0) return { kind: "system", text: "Turn complete. Type a follow-up or press q to exit." }
   return { kind: "error", text: `Backend exited with status ${status}.` }
 }
 
-function outputEntries(output: string): readonly Entry[] {
+function outputEntries(output: string): readonly TuiEntry[] {
   return output
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
@@ -197,23 +193,15 @@ function printBackendResult(result: BackendResult) {
 }
 
 function render(state: State, options: TuiOptions) {
-  const model = options.model?.trim() || DEFAULT_COMPOSER_MODEL
   process.stdout.write("\x1b[2J\x1b[H\x1b[?25l")
-  process.stdout.write(`opencomposer  ${model}  ${options.yolo ? "YOLO" : "guarded"}\n`)
-  process.stdout.write(`${state.cwd}\n`)
-  process.stdout.write("-".repeat(Math.min(process.stdout.columns || 80, 96)) + "\n")
-  for (const entry of state.entries.slice(-12)) {
-    process.stdout.write(`${marker(entry.kind)} ${entry.text}\n`)
-  }
-  process.stdout.write("\n")
-  process.stdout.write(state.phase === "running" ? "running Composer backend...\n" : `> ${state.input}`)
-}
-
-function marker(kind: Entry["kind"]) {
-  if (kind === "agent") return "|"
-  if (kind === "error") return "!"
-  if (kind === "user") return ">"
-  return "-"
+  process.stdout.write(
+    renderOpenComposerFrame({
+      ...state,
+      model: options.model?.trim() || DEFAULT_COMPOSER_MODEL,
+      width: process.stdout.columns || 100,
+      yolo: options.yolo ?? false,
+    }),
+  )
 }
 
 function quoteShellSegment(segment: string) {
