@@ -1,6 +1,7 @@
 import { DEFAULT_COMPOSER_MODEL, DEFAULT_CURSOR_AGENT_BIN, type CursorAgentCommand } from "./cursor-agent"
+import { readCursorStreamJson } from "./cursor-stream"
 import { runOpenComposerOpenTui } from "./opentui"
-import { runWorkflowTurn, writeWorkflowState } from "./workflow"
+import { runWorkflowTurn, writeWorkflowState, type WorkflowProgress, type WorkflowStageId } from "./workflow"
 export { isSubmitKey } from "./keyboard"
 
 type TuiOptions = {
@@ -18,6 +19,18 @@ type BackendInput = Required<Pick<TuiOptions, "backend" | "prompt">> &
 type BackendResult = {
   readonly output: string
   readonly status: number
+}
+
+type BackendRunOptions = {
+  readonly onEntry?: WorkflowProgress
+  readonly stage?: WorkflowStageId
+  readonly streamJson?: boolean
+}
+
+type BackendStageInput = BackendInput & {
+  readonly outputFormat?: "stream-json" | "text"
+  readonly stage?: WorkflowStageId
+  readonly streamPartialOutput?: boolean
 }
 
 export function selectOpenComposerTuiRunner(input: {
@@ -43,9 +56,10 @@ export function createOpenComposerTuiDryRun(options: TuiOptions) {
   ].join(" ")
 }
 
-export function createTuiBackendCommand(input: BackendInput): CursorAgentCommand {
+export function createTuiBackendCommand(input: BackendStageInput): CursorAgentCommand {
   const model = input.model?.trim() || DEFAULT_COMPOSER_MODEL
   const yoloArgs = input.yolo ? ["--yolo", "--sandbox", "disabled", "--approve-mcps"] : []
+  const outputFormat = input.outputFormat ?? "text"
   return {
     bin: input.backend,
     args: [
@@ -57,7 +71,8 @@ export function createTuiBackendCommand(input: BackendInput): CursorAgentCommand
       "--trust",
       "--force",
       "--output-format",
-      "text",
+      outputFormat,
+      ...(input.streamPartialOutput ? ["--stream-partial-output"] : []),
       input.prompt,
     ],
   }
@@ -85,19 +100,31 @@ export async function runOpenComposerTui(options: TuiOptions) {
           const stageResult = await runBackendTurn(
             createTuiBackendCommand({
               backend,
+              outputFormat: "stream-json",
               prompt: stageInput.prompt,
+              stage: stageInput.stage,
+              streamPartialOutput: true,
               turn: stageInput.turn,
               model: options.model,
               yolo: options.yolo,
             }),
+            {
+              onEntry: stageInput.onEntry,
+              stage: stageInput.stage,
+              streamJson: true,
+            },
           )
           return { output: stageResult.output, status: stageResult.status }
+        },
+        onProgress: (entry) => {
+          input.onEntry?.(entry)
         },
         onUpdate: async (workflow) => {
           input.onWorkflowUpdate?.(workflow)
           await writeWorkflowState({ workflow })
         },
         prompt: input.prompt,
+        resultEntries: "none",
         teamEnabled: process.env.OPENCOMPOSER_ENABLE_TEAM === "1",
         turn: input.turn,
       })
@@ -116,17 +143,17 @@ export async function runOpenComposerTui(options: TuiOptions) {
   })
 }
 
-async function runBackendTurn(command: CursorAgentCommand): Promise<BackendResult> {
+async function runBackendTurn(command: CursorAgentCommand, options: BackendRunOptions = {}): Promise<BackendResult> {
   const proc = Bun.spawn([command.bin, ...command.args], {
     stdin: "ignore",
     stdout: "pipe",
     stderr: "pipe",
   })
-  const [stdout, stderr, status] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ])
+  const stdoutPromise =
+    options.streamJson && options.stage
+      ? readCursorStreamJson({ onEntry: options.onEntry, stage: options.stage, stream: proc.stdout })
+      : new Response(proc.stdout).text()
+  const [stdout, stderr, status] = await Promise.all([stdoutPromise, new Response(proc.stderr).text(), proc.exited])
   return { output: [stdout, stderr].filter((part) => part.trim().length > 0).join("\n"), status }
 }
 

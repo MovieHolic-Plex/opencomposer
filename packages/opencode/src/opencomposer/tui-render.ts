@@ -1,4 +1,5 @@
 export type TuiEntry = {
+  readonly id?: string
   readonly kind: "agent" | "error" | "system" | "user"
   readonly text: string
 }

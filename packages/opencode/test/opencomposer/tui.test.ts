@@ -57,6 +57,19 @@ describe("opencomposer tui", () => {
     expect(command.args).toContain("--continue")
   })
 
+  test("Given streaming output When building backend command Then Cursor Agent emits stream-json partials", () => {
+    const command = createTuiBackendCommand({
+      backend: "cursor-agent",
+      outputFormat: "stream-json",
+      prompt: "continue",
+      streamPartialOutput: true,
+      turn: "follow-up",
+    })
+
+    expect(command.args).toContain("stream-json")
+    expect(command.args).toContain("--stream-partial-output")
+  })
+
   test("Given a TUI state When rendering Then it uses an opencode-style session surface", () => {
     const frame = renderOpenComposerFrame({
       cwd: "/workspace/app",

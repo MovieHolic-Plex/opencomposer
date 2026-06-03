@@ -1,6 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 import "opentui-spinner/solid"
 import { For, Show } from "solid-js"
+import { MarkdownText } from "./opentui-markdown"
 import type { OpenTuiState } from "./opentui"
 import type { TuiEntry } from "./tui-render"
 import type { WorkflowStage, WorkflowStageStatus } from "./workflow"
@@ -74,9 +75,7 @@ function TranscriptEntry(props: { readonly entry: TuiEntry }) {
   return (
     <box flexDirection="row" gap={1}>
       <text fg={entryColor(props.entry.kind)}>{marker(props.entry.kind)}</text>
-      <text fg={props.entry.kind === "system" ? color.muted : color.text} wrapMode="word">
-        {props.entry.text}
-      </text>
+      <MarkdownText muted={props.entry.kind === "system"} text={props.entry.text} />
     </box>
   )
 }
@@ -195,8 +194,7 @@ function workflowMarker(status: WorkflowStageStatus) {
 }
 
 function workflowColor(status: WorkflowStageStatus) {
-  if (status === "done") return color.success
   if (status === "failed") return color.error
-  if (status === "running") return color.accent
+  if (status === "running") return color.success
   return color.muted
 }

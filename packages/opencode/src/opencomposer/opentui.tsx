@@ -19,6 +19,7 @@ export type OpenTuiState = {
 }
 
 export type OpenTuiBackend = (input: {
+  readonly onEntry?: (entry: TuiEntry) => void
   readonly onWorkflowUpdate?: (workflow: WorkflowState) => void
   readonly prompt: string
   readonly turn: "first" | "follow-up"
@@ -71,6 +72,9 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
     })
     void props
       .backend({
+        onEntry: (entry) => {
+          setState((next) => ({ ...next, entries: upsertEntry(next.entries, entry) }))
+        },
         onWorkflowUpdate: (workflow) => {
           setState((next) => ({ ...next, workflow }))
         },
@@ -148,4 +152,11 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
 function backendEntry(status: number): TuiEntry {
   if (status === 0) return { kind: "system", text: "Turn complete. Type a follow-up or press q to exit." }
   return { kind: "error", text: `Backend exited with status ${status}.` }
+}
+
+function upsertEntry(entries: readonly TuiEntry[], entry: TuiEntry): readonly TuiEntry[] {
+  if (!entry.id) return [...entries, entry]
+  const index = entries.findIndex((item) => item.id === entry.id)
+  if (index < 0) return [...entries, entry]
+  return [...entries.slice(0, index), entry, ...entries.slice(index + 1)]
 }

@@ -19,6 +19,7 @@ export type WorkflowState = {
 }
 
 export type WorkflowBackend = (input: {
+  readonly onEntry?: WorkflowProgress
   readonly prompt: string
   readonly stage: WorkflowStageId
   readonly turn: "first" | "follow-up"
@@ -26,7 +27,9 @@ export type WorkflowBackend = (input: {
 
 export type WorkflowUpdate = (workflow: WorkflowState) => Promise<void> | void
 
-export type WorkflowEntry = { readonly kind: "agent" | "error" | "system"; readonly text: string }
+export type WorkflowEntry = { readonly id?: string; readonly kind: "agent" | "error" | "system"; readonly text: string }
+
+export type WorkflowProgress = (entry: WorkflowEntry) => Promise<void> | void
 
 export type WorkflowResult = {
   readonly entries: readonly WorkflowEntry[]
@@ -50,7 +53,9 @@ export function createInitialWorkflow(input: {
 export async function runWorkflowTurn(input: {
   readonly backend: WorkflowBackend
   readonly onUpdate?: WorkflowUpdate
+  readonly onProgress?: WorkflowProgress
   readonly prompt: string
+  readonly resultEntries?: "none" | "summary"
   readonly teamEnabled?: boolean
   readonly turn: "first" | "follow-up"
 }) {
@@ -61,12 +66,15 @@ export async function runWorkflowTurn(input: {
   for (const stage of initial.stages) {
     if (stage.status === "skipped") {
       context.push(stage)
+      await input.onProgress?.({ kind: "system", text: `workflow ${stage.id}: skipped` })
       continue
     }
     const stagePrompt = createStagePrompt({ prompt: input.prompt, stage: stage.id, stages: context })
     workflow = updateStage(workflow, { ...stage, prompt: stagePrompt, status: "running" })
     await input.onUpdate?.(workflow)
+    await input.onProgress?.({ kind: "system", text: `workflow ${stage.id}: running` })
     const result = await input.backend({
+      onEntry: input.onProgress,
       prompt: stagePrompt,
       stage: stage.id,
       turn: context.some((item) => item.status === "done") || input.turn === "follow-up" ? "follow-up" : "first",
@@ -79,11 +87,17 @@ export async function runWorkflowTurn(input: {
     } satisfies WorkflowStage
     workflow = updateStage(workflow, nextStage)
     await input.onUpdate?.(workflow)
+    await input.onProgress?.({
+      kind: nextStage.status === "failed" ? "error" : "system",
+      text: `workflow ${stage.id}: ${nextStage.status}`,
+    })
     context.push(nextStage)
-    if (result.status !== 0) return workflowResult({ status: result.status, workflow })
+    if (result.status !== 0) {
+      return workflowResult({ resultEntries: input.resultEntries ?? "summary", status: result.status, workflow })
+    }
   }
 
-  return workflowResult({ status: 0, workflow })
+  return workflowResult({ resultEntries: input.resultEntries ?? "summary", status: 0, workflow })
 }
 
 export async function writeWorkflowState(input: { readonly path?: string; readonly workflow: WorkflowState }) {
@@ -143,9 +157,13 @@ function updateStage(workflow: WorkflowState, stage: WorkflowStage): WorkflowSta
   }
 }
 
-function workflowResult(input: { readonly status: number; readonly workflow: WorkflowState }): WorkflowResult {
+function workflowResult(input: {
+  readonly resultEntries: "none" | "summary"
+  readonly status: number
+  readonly workflow: WorkflowState
+}): WorkflowResult {
   return {
-    entries: input.workflow.stages.flatMap((stage) => workflowEntries(stage)),
+    entries: input.resultEntries === "none" ? [] : input.workflow.stages.flatMap((stage) => workflowEntries(stage)),
     status: input.status,
     workflow: input.workflow,
   }

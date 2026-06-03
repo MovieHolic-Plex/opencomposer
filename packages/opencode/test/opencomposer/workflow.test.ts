@@ -49,6 +49,28 @@ describe("opencomposer workflow", () => {
     ])
   })
 
+  test("Given progress callbacks When running a turn Then stage state changes are emitted immediately", async () => {
+    const progress: string[] = []
+    const backend: WorkflowBackend = async (input) => {
+      input.onEntry?.({ kind: "agent", text: `live ${input.stage}` })
+      return { output: `artifact from ${input.stage}`, status: 0 }
+    }
+
+    await runWorkflowTurn({
+      backend,
+      onProgress: (entry) => {
+        progress.push(`${entry.kind}:${entry.text}`)
+      },
+      prompt: "fix tests",
+      resultEntries: "none",
+      turn: "first",
+    })
+
+    expect(progress).toContain("system:workflow deep-interview: running")
+    expect(progress).toContain("agent:live deep-interview")
+    expect(progress).toContain("system:workflow execute: done")
+  })
+
   test("Given team execution is enabled When running a turn Then the optional team stage runs before execute", async () => {
     const calls: string[] = []
     const backend: WorkflowBackend = async (input) => {
