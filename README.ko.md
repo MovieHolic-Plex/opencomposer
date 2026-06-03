@@ -17,31 +17,60 @@ model/runtime backend로 두고 OpenCode의 terminal product surface를 그 위�
 - Runtime backend: `cursor-agent`
 - 첫 bridge 위치: `packages/opencode/src/opencomposer`
 
-첫 bridge는 Cursor Agent를 headless 또는 ACP mode로 실행할 때 `--model
-composer-2.5`를 항상 넣습니다. 명시적인 override는 허용합니다.
+`opencomposer` 명령은 기본적으로 Cursor Agent interactive TUI를
+`composer-2.5` 모델로 바로 엽니다. headless 또는 ACP mode도 같은 기본 모델을
+사용합니다. upstream OpenCode TUI shell은 아직 Composer backend에 연결되지
+않았으므로 `--opencode-tui` 실험 옵션으로 분리했습니다.
 
 ## 사용법
 
 이 저장소에서:
 
 ```bash
+opencomposer
+opencomposer "fix tests"
+opencomposer --yolo "fix tests"
+opencomposer --opencode-tui
+```
+
+설치 없이 저장소에서 직접 확인:
+
+```bash
+bun run --cwd packages/opencode opencomposer --dry-run
 bun run --cwd packages/opencode opencomposer --dry-run "fix tests"
+bun run --cwd packages/opencode opencomposer --dry-run --opencode-tui
 ```
 
 예상 dry run:
 
 ```bash
-cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+cursor-agent --model composer-2.5
+cursor-agent --model composer-2.5 'fix tests'
+cd .../packages/opencode && bun run --conditions=browser .../src/index.ts ...
 ```
 
-ACP mode:
+Headless / ACP bridge:
 
 ```bash
+bun run --cwd packages/opencode opencomposer --dry-run --headless "fix tests"
+# cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+
 bun run --cwd packages/opencode opencomposer --dry-run --acp
 # cursor-agent --model composer-2.5 acp
 ```
 
-필요할 때 override:
+yolo:
+
+```bash
+opencomposer --yolo
+opencomposer --headless --yolo "fix tests"
+```
+
+기본 TUI/headless/ACP yolo는 Cursor Agent에 `--yolo --sandbox disabled
+--approve-mcps`를 전달합니다. `--opencode-tui --yolo`는 해당 실행에만
+`OPENCODE_PERMISSION='{"*":"allow"}'`를 주입합니다.
+
+필요할 때 모델 override:
 
 ```bash
 bun run --cwd packages/opencode opencomposer --dry-run --model composer-2.5-fast --acp

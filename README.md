@@ -16,31 +16,60 @@ This repository is at the fork-foundation stage.
 - Runtime backend: `cursor-agent`
 - First bridge: `packages/opencode/src/opencomposer`
 
-The first committed bridge can run Cursor Agent in headless or ACP mode with
-`--model composer-2.5` always set unless explicitly overridden.
+The `opencomposer` command opens the Cursor Agent interactive TUI with
+`composer-2.5` by default. Headless and ACP modes use the same default model.
+The upstream OpenCode TUI shell is not wired to the Composer backend yet, so it
+is exposed separately through the experimental `--opencode-tui` option.
 
 ## Usage
 
 From this repo:
 
 ```bash
+opencomposer
+opencomposer "fix tests"
+opencomposer --yolo "fix tests"
+opencomposer --opencode-tui
+```
+
+Without installing, from this repository:
+
+```bash
+bun run --cwd packages/opencode opencomposer --dry-run
 bun run --cwd packages/opencode opencomposer --dry-run "fix tests"
+bun run --cwd packages/opencode opencomposer --dry-run --opencode-tui
 ```
 
 Expected dry run:
 
 ```bash
-cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+cursor-agent --model composer-2.5
+cursor-agent --model composer-2.5 'fix tests'
+cd .../packages/opencode && bun run --conditions=browser .../src/index.ts ...
 ```
 
-ACP mode:
+Headless / ACP bridge:
 
 ```bash
+bun run --cwd packages/opencode opencomposer --dry-run --headless "fix tests"
+# cursor-agent --model composer-2.5 --print --trust --force --output-format text 'fix tests'
+
 bun run --cwd packages/opencode opencomposer --dry-run --acp
 # cursor-agent --model composer-2.5 acp
 ```
 
-Override, when needed:
+Yolo:
+
+```bash
+opencomposer --yolo
+opencomposer --headless --yolo "fix tests"
+```
+
+Default TUI/headless/ACP yolo passes `--yolo --sandbox disabled --approve-mcps`
+to Cursor Agent. `--opencode-tui --yolo` injects
+`OPENCODE_PERMISSION='{"*":"allow"}'` only into that child process.
+
+Override the model when needed:
 
 ```bash
 bun run --cwd packages/opencode opencomposer --dry-run --model composer-2.5-fast --acp

@@ -1,8 +1,54 @@
 import { describe, expect, test } from "bun:test"
 
 describe("opencomposer cli", () => {
-  test("Given a dry-run prompt When running the source CLI Then it prints a composer-2.5 Cursor Agent command", async () => {
+  test("Given no command mode When running the source CLI dry-run Then it prints a Composer Cursor Agent TUI command", async () => {
+    const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run"], {
+      cwd: import.meta.dir.replace("/test/opencomposer", ""),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+
+    const stdout = await new Response(proc.stdout).text()
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(await proc.exited).toBe(0)
+    expect(stderr).toBe("")
+    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5")
+  })
+
+  test("Given a prompt When running the source CLI dry-run Then it opens Cursor Agent TUI with an initial prompt", async () => {
     const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "fix tests"], {
+      cwd: import.meta.dir.replace("/test/opencomposer", ""),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+
+    const stdout = await new Response(proc.stdout).text()
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(await proc.exited).toBe(0)
+    expect(stderr).toBe("")
+    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5 'fix tests'")
+  })
+
+  test("Given opencode TUI mode When running dry-run Then it opens the upstream TUI shell", async () => {
+    const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "--opencode-tui"], {
+      cwd: import.meta.dir.replace("/test/opencomposer", ""),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+
+    const stdout = await new Response(proc.stdout).text()
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(await proc.exited).toBe(0)
+    expect(stderr).toBe("")
+    expect(stdout.trim()).toContain("bun run --conditions=browser")
+    expect(stdout.trim()).toContain("src/index.ts")
+  })
+
+  test("Given headless mode When running the source CLI Then it prints a Cursor Agent command", async () => {
+    const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "--headless", "fix tests"], {
       cwd: import.meta.dir.replace("/test/opencomposer", ""),
       stdout: "pipe",
       stderr: "pipe",
@@ -34,5 +80,20 @@ describe("opencomposer cli", () => {
     expect(await proc.exited).toBe(0)
     expect(stderr).toBe("")
     expect(stdout.trim()).toBe("cursor-agent --model composer-2.5-fast acp")
+  })
+
+  test("Given yolo mode When running TUI dry-run Then it passes Cursor Agent yolo flags", async () => {
+    const proc = Bun.spawn([process.execPath, "src/opencomposer/cli.ts", "--dry-run", "--yolo", "fix tests"], {
+      cwd: import.meta.dir.replace("/test/opencomposer", ""),
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+
+    const stdout = await new Response(proc.stdout).text()
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(await proc.exited).toBe(0)
+    expect(stderr).toBe("")
+    expect(stdout.trim()).toBe("cursor-agent --model composer-2.5 --yolo --sandbox disabled --approve-mcps 'fix tests'")
   })
 })

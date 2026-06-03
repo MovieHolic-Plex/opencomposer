@@ -1,12 +1,15 @@
 #!/usr/bin/env bun
-import { DEFAULT_CURSOR_AGENT_BIN, buildCursorAgentArgs, formatCursorAgentCommand } from "./cursor-agent"
+import { DEFAULT_CURSOR_AGENT_BIN, buildCursorAgentArgs, formatShellCommand } from "./cursor-agent"
+import { buildOpencodeTuiCommand } from "./opencode-tui"
 
 type CliOptions = {
   readonly bin: string
   readonly dryRun: boolean
-  readonly mode: "acp" | "headless"
+  readonly mode: "acp" | "headless" | "opencode-tui" | "tui"
   readonly model?: string
+  readonly project?: string
   readonly prompt?: string
+  readonly yolo: boolean
 }
 
 class UsageError extends Error {
@@ -18,20 +21,31 @@ class UsageError extends Error {
 
 export async function main(argv: readonly string[]) {
   const options = parseArgs(argv)
-  const command = {
-    bin: options.bin,
-    args: buildCursorAgentArgs({
-      mode: options.mode,
-      model: options.model,
-      prompt: options.prompt,
-    }),
-  }
+  const command =
+    options.mode === "opencode-tui"
+      ? buildOpencodeTuiCommand({
+          model: options.model,
+          project: options.project,
+          prompt: options.prompt,
+          yolo: options.yolo,
+        })
+      : {
+          bin: options.bin,
+          args: buildCursorAgentArgs({
+            mode: options.mode === "tui" ? "interactive" : options.mode,
+            model: options.model,
+            prompt: options.prompt,
+            yolo: options.yolo,
+          }),
+        }
   if (options.dryRun) {
-    process.stdout.write(formatCursorAgentCommand(command) + "\n")
+    process.stdout.write(formatShellCommand(command) + "\n")
     return 0
   }
 
   const proc = Bun.spawn([command.bin, ...command.args], {
+    cwd: command.cwd,
+    env: command.env ? { ...process.env, ...command.env } : process.env,
     stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
@@ -44,18 +58,22 @@ function parseArgs(argv: readonly string[]): CliOptions {
   return {
     bin: state.bin,
     dryRun: state.dryRun,
-    mode: state.mode ?? (state.prompt.length > 0 ? "headless" : "acp"),
+    mode: state.mode ?? "tui",
     ...(state.model && { model: state.model }),
+    ...(state.project && { project: state.project }),
     ...(state.prompt.length > 0 && { prompt: state.prompt.join(" ") }),
+    yolo: state.yolo,
   }
 }
 
 type ParseState = {
   bin: string
   dryRun: boolean
-  mode: "acp" | "headless" | undefined
+  mode: "acp" | "headless" | "opencode-tui" | "tui" | undefined
   model: string | undefined
+  project: string | undefined
   prompt: string[]
+  yolo: boolean
 }
 
 function parseFlags(argv: readonly string[]): ParseState {
@@ -64,7 +82,9 @@ function parseFlags(argv: readonly string[]): ParseState {
     dryRun: false,
     mode: undefined,
     model: undefined,
+    project: undefined,
     prompt: [],
+    yolo: false,
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -77,12 +97,29 @@ function parseFlags(argv: readonly string[]): ParseState {
       state.mode = "acp"
       continue
     }
+    if (arg === "--tui") {
+      state.mode = "tui"
+      continue
+    }
+    if (arg === "--opencode-tui") {
+      state.mode = "opencode-tui"
+      continue
+    }
     if (arg === "--headless") {
       state.mode = "headless"
       continue
     }
+    if (arg === "--yolo") {
+      state.yolo = true
+      continue
+    }
     if (arg === "--model" || arg === "-m") {
       state.model = requireValue(argv[index + 1], arg)
+      index += 1
+      continue
+    }
+    if (arg === "--project") {
+      state.project = requireValue(argv[index + 1], arg)
       index += 1
       continue
     }
@@ -111,13 +148,19 @@ function helpText() {
     "opencomposer - Composer 2.5 through Cursor Agent",
     "",
     "Usage:",
-    "  opencomposer [--dry-run] [--model composer-2.5] <prompt>",
-    "  opencomposer --acp",
+    "  opencomposer [--dry-run] [--model composer-2.5] [--yolo] [prompt]",
+    "  opencomposer --headless [--yolo] <prompt>",
+    "  opencomposer --acp [--yolo]",
+    "  opencomposer --opencode-tui [--project <path>]",
     "",
     "Options:",
     "  --model, -m <id>          Cursor Agent model, defaults to composer-2.5",
+    "  --tui                    Start Cursor Agent interactive TUI (default)",
+    "  --opencode-tui           Start the upstream OpenCode TUI shell",
     "  --acp                    Start cursor-agent ACP mode",
     "  --headless               Force headless prompt mode",
+    "  --yolo                   Run unattended: allow Cursor commands and opencode permissions",
+    "  --project <path>          Project directory for TUI mode",
     "  --cursor-agent-bin <bin>  Cursor Agent executable",
     "  --dry-run                Print the command without executing",
     "",
