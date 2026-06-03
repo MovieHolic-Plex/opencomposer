@@ -6,6 +6,7 @@ import { DEFAULT_COMPOSER_MODEL } from "./cursor-agent"
 import { isBackspaceKey, isSubmitKey, printableKey } from "./keyboard"
 import { color, Composer, Footer, Header, SessionPanel, Sidebar, Transcript } from "./opentui-view"
 import type { TuiEntry } from "./tui-render"
+import type { WorkflowState } from "./workflow"
 
 export type OpenTuiState = {
   readonly cwd: string
@@ -14,12 +15,14 @@ export type OpenTuiState = {
   readonly input: string
   readonly phase: "editing" | "running"
   readonly status: string
+  readonly workflow?: WorkflowState
 }
 
 export type OpenTuiBackend = (input: {
+  readonly onWorkflowUpdate?: (workflow: WorkflowState) => void
   readonly prompt: string
   readonly turn: "first" | "follow-up"
-}) => Promise<{ readonly entries: readonly TuiEntry[]; readonly status: number }>
+}) => Promise<{ readonly entries: readonly TuiEntry[]; readonly status: number; readonly workflow?: WorkflowState }>
 
 export type OpenTuiOptions = {
   readonly backend: OpenTuiBackend
@@ -67,7 +70,13 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
       status: "RUNNING",
     })
     void props
-      .backend({ prompt, turn: current.hasSession ? "follow-up" : "first" })
+      .backend({
+        onWorkflowUpdate: (workflow) => {
+          setState((next) => ({ ...next, workflow }))
+        },
+        prompt,
+        turn: current.hasSession ? "follow-up" : "first",
+      })
       .then((result) => {
         setExitStatus(result.status)
         setState((next) => ({
@@ -76,6 +85,7 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
           hasSession: result.status === 0 || next.hasSession,
           phase: "editing",
           status: result.status === 0 ? "READY" : "FAILED",
+          workflow: result.workflow ?? next.workflow,
         }))
       })
       .catch((error: unknown) => {

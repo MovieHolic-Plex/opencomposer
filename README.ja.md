@@ -17,6 +17,10 @@ Translations: [English](README.md), [한국어](README.ko.md),
 - default UI: transcript、composer input、status、wide terminal 向け workflow/sidebar
   rail を持つ OpenTUI session surface
 - backend: `cursor-agent --model composer-2.5 --print --trust --force`
+- workflow: interactive turn は `deep-interview -> ralplan -> ultragoal -> execute`
+  の順に実行します。`OPENCOMPOSER_ENABLE_TEAM=1` を指定すると execution 前に optional
+  `team` stage も実行します。
+- state: workflow update は毎回 `.opencomposer/workflow.json` に保存されます。
 - follow-up turns: TUI の後続 turn は `--continue` で送信
 - YOLO mode: `--yolo` が Cursor Agent の unattended 実行 flag を渡します
 - escape hatches: `--headless`, `--acp`, experimental `--opencode-tui`
@@ -37,6 +41,7 @@ opencomposer
 
 ```bash
 opencomposer --yolo
+OPENCOMPOSER_ENABLE_TEAM=1 opencomposer
 opencomposer --headless "fix the failing tests"
 opencomposer --headless --yolo "run the migration and fix errors"
 opencomposer --acp
@@ -77,7 +82,7 @@ checks は package directory から実行します。
 
 ```bash
 cd packages/opencode
-bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts test/opencomposer/workflow.test.ts
 bun typecheck
 ```
 

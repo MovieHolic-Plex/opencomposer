@@ -17,6 +17,10 @@ interface를 붙입니다.
 - 기본 UI: transcript, composer input, status, 넓은 터미널용 workflow/sidebar rail을
   갖춘 OpenTUI session surface
 - Backend: `cursor-agent --model composer-2.5 --print --trust --force`
+- Workflow: interactive turn은 `deep-interview -> ralplan -> ultragoal -> execute`를
+  순서대로 실행합니다. `OPENCOMPOSER_ENABLE_TEAM=1`을 주면 execution 전에 optional
+  `team` stage도 실행합니다.
+- State: workflow update는 매번 `.opencomposer/workflow.json`에 기록됩니다.
 - 이어지는 대화: TUI follow-up turn은 `--continue`로 전달
 - YOLO mode: `--yolo`가 Cursor Agent unattended 실행 flag를 전달
 - 우회 경로: `--headless`, `--acp`, 실험용 `--opencode-tui`
@@ -37,6 +41,7 @@ opencomposer
 
 ```bash
 opencomposer --yolo
+OPENCOMPOSER_ENABLE_TEAM=1 opencomposer
 opencomposer --headless "fix the failing tests"
 opencomposer --headless --yolo "run the migration and fix errors"
 opencomposer --acp
@@ -77,7 +82,7 @@ OpenComposer 코드는 `packages/opencode/src/opencomposer`에 있습니다.
 
 ```bash
 cd packages/opencode
-bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts test/opencomposer/workflow.test.ts
 bun typecheck
 ```
 

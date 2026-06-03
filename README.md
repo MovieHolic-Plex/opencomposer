@@ -17,6 +17,10 @@ Maintained translations: [한국어](README.ko.md), [日本語](README.ja.md),
 - Default UI: OpenTUI session surface with transcript, composer input, status,
   and a workflow/sidebar rail on wide terminals
 - Backend: `cursor-agent --model composer-2.5 --print --trust --force`
+- Workflow: interactive turns run `deep-interview -> ralplan -> ultragoal ->
+execute`; set `OPENCOMPOSER_ENABLE_TEAM=1` to include the optional `team`
+  stage before execution
+- State: every workflow update is written to `.opencomposer/workflow.json`
 - Follow-up turns: the TUI sends later turns with `--continue`
 - YOLO mode: `--yolo` forwards unattended Cursor Agent flags
 - Escape hatches: `--headless`, `--acp`, and experimental `--opencode-tui`
@@ -37,6 +41,7 @@ Useful variants:
 
 ```bash
 opencomposer --yolo
+OPENCOMPOSER_ENABLE_TEAM=1 opencomposer
 opencomposer --headless "fix the failing tests"
 opencomposer --headless --yolo "run the migration and fix errors"
 opencomposer --acp
@@ -77,7 +82,7 @@ Run checks from the package directory:
 
 ```bash
 cd packages/opencode
-bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts test/opencomposer/workflow.test.ts
 bun typecheck
 ```
 

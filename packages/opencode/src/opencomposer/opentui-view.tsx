@@ -3,6 +3,7 @@ import "opentui-spinner/solid"
 import { For, Show } from "solid-js"
 import type { OpenTuiState } from "./opentui"
 import type { TuiEntry } from "./tui-render"
+import type { WorkflowStage, WorkflowStageStatus } from "./workflow"
 
 export const color = {
   accent: "#fab283",
@@ -94,6 +95,8 @@ export function Composer(props: { readonly input: string; readonly phase: OpenTu
 }
 
 export function Sidebar(props: { readonly model: string; readonly state: OpenTuiState; readonly yolo: boolean }) {
+  const stages = () => props.state.workflow?.stages ?? fallbackWorkflowStages
+
   return (
     <box
       width={42}
@@ -109,10 +112,7 @@ export function Sidebar(props: { readonly model: string; readonly state: OpenTui
           <b>Workflow</b>
         </text>
       </Row>
-      <WorkflowItem label="deep-interview" active={props.state.phase === "running"} />
-      <WorkflowItem label="ralplan" active={props.state.phase === "running"} />
-      <WorkflowItem label="ultragoal" active={props.state.phase === "running"} />
-      <WorkflowItem label="team optional" active={false} />
+      <For each={stages()}>{(stage) => <WorkflowItem label={workflowLabel(stage)} status={stage.status} />}</For>
       <box height={1} />
       <Row>
         <text fg={color.text}>
@@ -132,11 +132,19 @@ export function Sidebar(props: { readonly model: string; readonly state: OpenTui
   )
 }
 
-function WorkflowItem(props: { readonly active: boolean; readonly label: string }) {
+const fallbackWorkflowStages: readonly WorkflowStage[] = [
+  { id: "deep-interview", status: "pending" },
+  { id: "ralplan", status: "pending" },
+  { id: "ultragoal", status: "pending" },
+  { id: "team", status: "skipped" },
+  { id: "execute", status: "pending" },
+]
+
+function WorkflowItem(props: { readonly label: string; readonly status: WorkflowStageStatus }) {
   return (
     <Row>
-      <text fg={props.active ? color.success : color.muted}>
-        {props.active ? "●" : "○"} {props.label}
+      <text fg={workflowColor(props.status)}>
+        {workflowMarker(props.status)} {props.label}
       </text>
     </Row>
   )
@@ -170,5 +178,25 @@ function entryColor(kind: TuiEntry["kind"]) {
   if (kind === "error") return color.error
   if (kind === "user") return color.accent
   if (kind === "agent") return color.success
+  return color.muted
+}
+
+function workflowLabel(stage: WorkflowStage) {
+  if (stage.id === "team") return "team optional"
+  return stage.id
+}
+
+function workflowMarker(status: WorkflowStageStatus) {
+  if (status === "done") return "✓"
+  if (status === "failed") return "!"
+  if (status === "running") return "●"
+  if (status === "skipped") return "-"
+  return "○"
+}
+
+function workflowColor(status: WorkflowStageStatus) {
+  if (status === "done") return color.success
+  if (status === "failed") return color.error
+  if (status === "running") return color.accent
   return color.muted
 }

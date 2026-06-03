@@ -15,6 +15,10 @@ Translations: [English](README.md), [한국어](README.ko.md),
 - 預設 UI：OpenTUI session surface，包含 transcript、composer input、status，以及寬螢幕
   terminal 下的 workflow/sidebar rail
 - backend：`cursor-agent --model composer-2.5 --print --trust --force`
+- workflow：interactive turn 會按 `deep-interview -> ralplan -> ultragoal -> execute`
+  順序執行。設定 `OPENCOMPOSER_ENABLE_TEAM=1` 後，會在 execution 前加入 optional
+  `team` stage。
+- state：每次 workflow update 都會寫入 `.opencomposer/workflow.json`。
 - 後續對話：TUI follow-up turn 會透過 `--continue` 傳送
 - YOLO mode：`--yolo` 會傳遞 Cursor Agent unattended execution flags
 - 備用路徑：`--headless`, `--acp`, experimental `--opencode-tui`
@@ -35,6 +39,7 @@ opencomposer
 
 ```bash
 opencomposer --yolo
+OPENCOMPOSER_ENABLE_TEAM=1 opencomposer
 opencomposer --headless "fix the failing tests"
 opencomposer --headless --yolo "run the migration and fix errors"
 opencomposer --acp
@@ -74,7 +79,7 @@ OpenComposer code 位於 `packages/opencode/src/opencomposer`。
 
 ```bash
 cd packages/opencode
-bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts
+bun test test/opencomposer/cursor-agent.test.ts test/opencomposer/cli.test.ts test/opencomposer/opencode-tui.test.ts test/opencomposer/tui.test.ts test/opencomposer/workflow.test.ts
 bun typecheck
 ```
 

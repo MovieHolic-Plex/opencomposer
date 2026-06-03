@@ -1,7 +1,7 @@
 import { DEFAULT_COMPOSER_MODEL, DEFAULT_CURSOR_AGENT_BIN, type CursorAgentCommand } from "./cursor-agent"
-export { isSubmitKey } from "./keyboard"
 import { runOpenComposerOpenTui } from "./opentui"
-import type { TuiEntry } from "./tui-render"
+import { runWorkflowTurn, writeWorkflowState } from "./workflow"
+export { isSubmitKey } from "./keyboard"
 
 type TuiOptions = {
   readonly backend?: string
@@ -80,16 +80,28 @@ export async function runOpenComposerTui(options: TuiOptions) {
 
   return await runOpenComposerOpenTui({
     backend: async (input) => {
-      const result = await runBackendTurn(
-        createTuiBackendCommand({
-          backend,
-          prompt: input.prompt,
-          turn: input.turn,
-          model: options.model,
-          yolo: options.yolo,
-        }),
-      )
-      return { entries: outputEntries(result.output), status: result.status }
+      const result = await runWorkflowTurn({
+        backend: async (stageInput) => {
+          const stageResult = await runBackendTurn(
+            createTuiBackendCommand({
+              backend,
+              prompt: stageInput.prompt,
+              turn: stageInput.turn,
+              model: options.model,
+              yolo: options.yolo,
+            }),
+          )
+          return { output: stageResult.output, status: stageResult.status }
+        },
+        onUpdate: async (workflow) => {
+          input.onWorkflowUpdate?.(workflow)
+          await writeWorkflowState({ workflow })
+        },
+        prompt: input.prompt,
+        teamEnabled: process.env.OPENCOMPOSER_ENABLE_TEAM === "1",
+        turn: input.turn,
+      })
+      return { entries: result.entries, status: result.status, workflow: result.workflow }
     },
     initial: {
       cwd: process.cwd(),
@@ -116,14 +128,6 @@ async function runBackendTurn(command: CursorAgentCommand): Promise<BackendResul
     proc.exited,
   ])
   return { output: [stdout, stderr].filter((part) => part.trim().length > 0).join("\n"), status }
-}
-
-function outputEntries(output: string): readonly TuiEntry[] {
-  return output
-    .split(/\r?\n/)
-    .map((line) => line.trimEnd())
-    .filter((line) => line.length > 0)
-    .map((text) => ({ kind: "agent", text }))
 }
 
 function printBackendResult(result: BackendResult) {
