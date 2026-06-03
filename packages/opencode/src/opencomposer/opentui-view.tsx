@@ -19,6 +19,8 @@ export const color = {
   warning: "#f5a742",
 } as const
 
+export const SIDEBAR_WIDTH = 30
+
 export function Header(props: { readonly model: string; readonly status: string; readonly yolo: boolean }) {
   return (
     <box
@@ -98,13 +100,13 @@ export function Sidebar(props: { readonly model: string; readonly state: OpenTui
 
   return (
     <box
-      width={42}
+      width={SIDEBAR_WIDTH}
       height="100%"
       flexDirection="column"
       backgroundColor={color.panel}
       paddingTop={1}
-      paddingLeft={2}
-      paddingRight={2}
+      paddingLeft={1}
+      paddingRight={1}
     >
       <Row>
         <text fg={color.text}>
@@ -126,6 +128,9 @@ export function Sidebar(props: { readonly model: string; readonly state: OpenTui
       </Row>
       <Row>
         <text fg={color.muted}>state {props.state.hasSession ? "continued" : "new session"}</text>
+      </Row>
+      <Row>
+        <text fg={color.muted}>tokens n/a</text>
       </Row>
     </box>
   )

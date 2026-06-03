@@ -4,7 +4,7 @@ import { render, useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createMemo, createSignal, onMount, Show } from "solid-js"
 import { DEFAULT_COMPOSER_MODEL } from "./cursor-agent"
 import { isBackspaceKey, isSubmitKey, printableKey } from "./keyboard"
-import { color, Composer, Footer, Header, SessionPanel, Sidebar, Transcript } from "./opentui-view"
+import { color, Composer, Footer, Header, SIDEBAR_WIDTH, SessionPanel, Sidebar, Transcript } from "./opentui-view"
 import type { TuiEntry } from "./tui-render"
 import type { WorkflowState } from "./workflow"
 
@@ -56,8 +56,8 @@ function OpenComposerApp(props: OpenTuiOptions & { readonly close: (status: numb
   const model = props.model?.trim() || DEFAULT_COMPOSER_MODEL
   const [state, setState] = createSignal(props.initial)
   const [exitStatus, setExitStatus] = createSignal(0)
-  const wide = createMemo(() => dimensions().width >= 110)
-  const contentWidth = createMemo(() => (wide() ? dimensions().width - 42 : dimensions().width))
+  const wide = createMemo(() => dimensions().width >= 96)
+  const contentWidth = createMemo(() => (wide() ? dimensions().width - SIDEBAR_WIDTH : dimensions().width))
 
   const submit = (value = state().input) => {
     const prompt = value.trim()

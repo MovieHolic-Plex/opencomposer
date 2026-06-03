@@ -26,6 +26,49 @@ describe("opencomposer cursor stream", () => {
     })
   })
 
+  test("Given cumulative stream-json assistant events When reading output Then repeated prefixes are not duplicated", async () => {
+    const entries: TuiEntry[] = []
+    const output = await readCursorStreamJson({
+      onEntry: (entry) => {
+        entries.push(entry)
+      },
+      stage: "execute",
+      stream: streamFromLines([
+        { type: "assistant", message: { content: [{ type: "text", text: "Checking" }] } },
+        { type: "assistant", message: { content: [{ type: "text", text: "Checking files" }] } },
+        { type: "assistant", message: { content: [{ type: "text", text: "Checking files now" }] } },
+        { type: "result", result: "Checking files now" },
+      ]),
+    })
+
+    expect(output).toBe("Checking files now")
+    expect(entries.at(-1)?.text).toBe("Checking files now")
+  })
+
+  test("Given repeated tool events When reading output Then identical progress summaries are emitted once", async () => {
+    const entries: TuiEntry[] = []
+    await readCursorStreamJson({
+      onEntry: (entry) => {
+        entries.push(entry)
+      },
+      stage: "execute",
+      stream: streamFromLines([
+        {
+          type: "tool_call",
+          subtype: "started",
+          tool_call: { readToolCall: { args: { path: "README.md" } } },
+        },
+        {
+          type: "tool_call",
+          subtype: "started",
+          tool_call: { readToolCall: { args: { path: "README.md" } } },
+        },
+      ]),
+    })
+
+    expect(entries).toEqual([{ kind: "system", text: "execute: tool read started README.md" }])
+  })
+
   test("Given markdown text When parsing it Then common blocks lose raw markdown markers", () => {
     const lines = parseMarkdownLines(["# Title", "- item with **bold**", "```", "const ok = true", "```"].join("\n"))
 
