@@ -15,10 +15,12 @@
     "build": "bun run script/build.ts",
     "fix-node-pty": "bun run script/fix-node-pty.ts",
     "dev": "bun run --conditions=browser ./src/index.ts",
+    "opencomposer": "bun run --conditions=browser ./src/opencomposer/cli.ts",
     "dev:temporary": "bun run --conditions=browser ./src/temporary.ts"
   },
   "bin": {
-    "opencode": "./bin/opencode"
+    "opencode": "./bin/opencode",
+    "opencomposer": "./bin/opencomposer"
   },
   "exports": {
     "./*": "./src/*.ts"
